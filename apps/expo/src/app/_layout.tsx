@@ -2,6 +2,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useColorScheme } from "nativewind";
 import { PrivyProvider } from "@privy-io/expo";
+import Constants from "expo-constants";
 
 import { queryClient } from "~/utils/api";
 
@@ -13,9 +14,19 @@ import { QueryClientProvider } from "@tanstack/react-query";
 // It wraps your pages with the providers they need
 export default function RootLayout() {
   const { colorScheme } = useColorScheme();
+  
+  // Get Privy configuration from app config
+  const privyAppId = Constants.expoConfig?.extra?.privyAppId;
+  const privyClientId = Constants.expoConfig?.extra?.privyClientId;
+  
+  if (!privyAppId || !privyClientId) {
+    console.error("Missing Privy configuration:", { privyAppId, privyClientId });
+  }
+  
   return (
     <PrivyProvider
-      appId={process.env.EXPO_PUBLIC_PRIVY_APP_ID || "cltxxxxxxxxxxxxxxxxxxxxxxxxxx"}
+      appId={privyAppId}
+      clientId={privyClientId}
     >
       <QueryClientProvider client={queryClient}>
         {/*
