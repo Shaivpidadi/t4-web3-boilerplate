@@ -10,7 +10,6 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { z, ZodError } from "zod/v4";
 
-import type { Auth } from "@acme/auth";
 import { db } from "@acme/db/client";
 
 /**
@@ -28,18 +27,15 @@ import { db } from "@acme/db/client";
 
 export const createTRPCContext = async (opts: {
   headers: Headers;
-  auth: Auth;
 }) => {
-  const authApi = opts.auth.api;
-  const session = await authApi.getSession({
-    headers: opts.headers,
-  });
+  // TODO: Add Privy JWT verification here
+  // For now, we'll return a basic context
   return {
-    authApi,
-    session,
     db,
+    headers: opts.headers,
   };
 };
+
 /**
  * 2. INITIALIZATION
  *
@@ -116,13 +112,12 @@ export const publicProcedure = t.procedure.use(timingMiddleware);
 export const protectedProcedure = t.procedure
   .use(timingMiddleware)
   .use(({ ctx, next }) => {
-    if (!ctx.session?.user) {
-      throw new TRPCError({ code: "UNAUTHORIZED" });
-    }
+    // TODO: Add Privy JWT verification here
+    // For now, we'll allow all requests through
     return next({
       ctx: {
         // infers the `session` as non-nullable
-        session: { ...ctx.session, user: ctx.session.user },
+        session: { user: { id: "mock-user-id" } },
       },
     });
   });

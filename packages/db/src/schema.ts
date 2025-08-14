@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -20,6 +20,44 @@ export const CreatePostSchema = createInsertSchema(Post, {
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+// New User table for Privy authentication
+export const User = pgTable("user", (t) => ({
+  id: t.uuid().notNull().primaryKey().defaultRandom(),
+  privyUserId: t.text().notNull().unique(),
+  email: t.text(),
+  walletAddress: t.text(),
+  createdAt: t.timestamp().defaultNow().notNull(),
+  lastLoginAt: t.timestamp().defaultNow().notNull(),
+}));
+
+export const CreateUserSchema = createInsertSchema(User, {
+  privyUserId: z.string(),
+  email: z.string().email().optional(),
+  walletAddress: z.string().optional(),
+}).omit({
+  id: true,
+  createdAt: true,
+  lastLoginAt: true,
+});
+
+// Session table for app sessions
+export const Session = pgTable("session", (t) => ({
+  id: t.uuid().notNull().primaryKey().defaultRandom(),
+  userId: t.uuid().notNull().references(() => User.id, { onDelete: "cascade" }),
+  token: t.text().notNull().unique(),
+  expiresAt: t.timestamp().notNull(),
+  createdAt: t.timestamp().defaultNow().notNull(),
+}));
+
+export const CreateSessionSchema = createInsertSchema(Session, {
+  userId: z.string().uuid(),
+  token: z.string(),
+  expiresAt: z.date(),
+}).omit({
+  id: true,
+  createdAt: true,
 });
 
 export * from "./auth-schema";

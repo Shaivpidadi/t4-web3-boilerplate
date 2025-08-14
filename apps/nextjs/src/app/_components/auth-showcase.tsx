@@ -1,58 +1,57 @@
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+"use client";
 
+import { useState } from "react";
 import { Button } from "@acme/ui/button";
 
-import { auth, getSession } from "~/auth/server";
+export function AuthShowcase() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userInfo, setUserInfo] = useState({
+    email: "user@example.com",
+    walletAddress: "0x1234...5678",
+  });
 
-export async function AuthShowcase() {
-  const session = await getSession();
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+  };
 
-  if (!session) {
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
     return (
-      <form>
+      <div className="flex flex-col items-center justify-center gap-4">
         <Button
           size="lg"
-          formAction={async () => {
-            "use server";
-            const res = await auth.api.signInSocial({
-              body: {
-                provider: "discord",
-                callbackURL: "/",
-              },
-            });
-            if (!res.url) {
-              throw new Error("No URL returned from signInSocial");
-            }
-            redirect(res.url);
-          }}
+          onClick={handleLogin}
         >
-          Sign in with Discord
+          Continue with Google (Mock)
         </Button>
-      </form>
+      </div>
     );
   }
 
   return (
     <div className="flex flex-col items-center justify-center gap-4">
       <p className="text-center text-2xl">
-        <span>Logged in as {session.user.name}</span>
+        <span>Logged in as {userInfo.email}</span>
       </p>
 
-      <form>
-        <Button
-          size="lg"
-          formAction={async () => {
-            "use server";
-            await auth.api.signOut({
-              headers: await headers(),
-            });
-            redirect("/");
-          }}
-        >
-          Sign out
-        </Button>
-      </form>
+      <div className="flex flex-col items-center gap-2">
+        <p className="text-sm text-muted-foreground">
+          Email: {userInfo.email}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Wallet: {userInfo.walletAddress}
+        </p>
+      </div>
+
+      <Button
+        size="lg"
+        onClick={handleLogout}
+      >
+        Sign out
+      </Button>
     </div>
   );
 }
