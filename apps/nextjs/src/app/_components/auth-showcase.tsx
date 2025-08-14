@@ -1,31 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { usePrivy } from '@privy-io/react-auth';
 import { Button } from "@acme/ui/button";
 
 export function AuthShowcase() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userInfo, setUserInfo] = useState({
-    email: "user@example.com",
-    walletAddress: "0x1234...5678",
-  });
+  const { login, logout, user, ready, authenticated } = usePrivy();
 
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-  };
+  if (!ready) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4">
+        <p className="text-center text-2xl">Loading...</p>
+      </div>
+    );
+  }
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-  };
-
-  if (!isAuthenticated) {
+  if (!authenticated || !user) {
     return (
       <div className="flex flex-col items-center justify-center gap-4">
         <Button
           size="lg"
-          onClick={handleLogin}
+          onClick={login}
         >
-          Continue with Google (Mock)
+          Continue with Google
         </Button>
       </div>
     );
@@ -34,21 +30,25 @@ export function AuthShowcase() {
   return (
     <div className="flex flex-col items-center justify-center gap-4">
       <p className="text-center text-2xl">
-        <span>Logged in as {userInfo.email}</span>
+        <span>Logged in as {user.email?.address || user.wallet?.address || "User"}</span>
       </p>
 
       <div className="flex flex-col items-center gap-2">
-        <p className="text-sm text-muted-foreground">
-          Email: {userInfo.email}
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Wallet: {userInfo.walletAddress}
-        </p>
+        {user.email?.address && (
+          <p className="text-sm text-muted-foreground">
+            Email: {user.email.address}
+          </p>
+        )}
+        {user.wallet?.address && (
+          <p className="text-sm text-muted-foreground">
+            Wallet: {user.wallet.address.slice(0, 6)}...{user.wallet.address.slice(-4)}
+          </p>
+        )}
       </div>
 
       <Button
         size="lg"
-        onClick={handleLogout}
+        onClick={logout}
       >
         Sign out
       </Button>
