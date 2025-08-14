@@ -28,6 +28,10 @@ export const User = pgTable("user", (t) => ({
   privyUserId: t.text().notNull().unique(),
   email: t.text(),
   walletAddress: t.text(),
+  // Enhanced wallet information
+  walletType: t.text().default('embedded'), // 'embedded' or 'external'
+  currentChainId: t.text().default('1'), // Default to Ethereum mainnet
+  preferredChainId: t.text().default('1'),
   createdAt: t.timestamp().defaultNow().notNull(),
   lastLoginAt: t.timestamp().defaultNow().notNull(),
 }));
@@ -36,6 +40,9 @@ export const CreateUserSchema = createInsertSchema(User, {
   privyUserId: z.string(),
   email: z.string().email().optional(),
   walletAddress: z.string().optional(),
+  walletType: z.string().optional(),
+  currentChainId: z.string().optional(),
+  preferredChainId: z.string().optional(),
 }).omit({
   id: true,
   createdAt: true,
