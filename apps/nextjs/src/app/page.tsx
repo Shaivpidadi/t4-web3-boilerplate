@@ -4,6 +4,7 @@ import { Suspense } from "react";
 
 import { AuthShowcase } from "./_components/auth-showcase";
 import WalletDashboard from "../components/WalletDashboard";
+import SmartContractPanel from "../components/SmartContractPanel";
 import { useWallet } from "../utils/wallet";
 
 function ChainStatus() {
@@ -42,10 +43,21 @@ export default function HomePage() {
           <WalletDashboard />
         </div>
 
+        {/* Smart Contract Panel - New addition */}
+        <div className="w-full max-w-4xl mb-8">
+          <h2 className="text-2xl font-bold text-center text-purple-600 mb-6">
+            ⚡ Smart Contract Panel
+          </h2>
+          <p className="text-center text-gray-600 mb-4">
+            Testing with existing contract on Sepolia testnet
+          </p>
+          <SmartContractPanel />
+        </div>
+
         <AuthShowcase />
         
         <p className="text-center text-lg">
-          Welcome to POAPStays with Privy authentication!
+          Welcome to POAPStays with Privy authentication and smart contract integration!
         </p>
       </div>
     </main>

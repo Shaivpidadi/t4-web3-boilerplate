@@ -1,5 +1,6 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useState, useCallback, useEffect } from 'react';
+import { ContractInteractor, formatTokenAmount, parseTokenAmount } from './contract';
 
 // Common chain configurations
 export const SUPPORTED_CHAINS = {
@@ -42,10 +43,13 @@ export const SUPPORTED_CHAINS = {
 export function useWallet() {
   const { user, authenticated, login, logout } = usePrivy();
   const { wallets } = useWallets();
-  const [currentChainId, setCurrentChainId] = useState('1');
+  const [currentChainId, setCurrentChainId] = useState('11155111'); // Default to Sepolia for testing
   const [isLoading, setIsLoading] = useState(false);
   const [balance, setBalance] = useState<string>('0');
+  const [tokenBalance, setTokenBalance] = useState<string>('0');
+  const [tokenInfo, setTokenInfo] = useState<any>(null);
   const [primaryWallet, setPrimaryWallet] = useState<any>(null);
+  const [contractInteractor, setContractInteractor] = useState<ContractInteractor | null>(null);
 
   // Get the primary wallet (embedded wallet first, then first available)
   useEffect(() => {
@@ -55,6 +59,35 @@ export function useWallet() {
       setPrimaryWallet(embeddedWallet || wallets[0]);
     }
   }, [wallets]);
+
+  // Initialize contract interactor when wallet or chain changes
+  useEffect(() => {
+    if (primaryWallet && currentChainId) {
+      const initializeContract = async () => {
+        try {
+          const provider = await primaryWallet.getEthereumProvider();
+          // Privy provider handles signing internally, no need for separate signer
+          const interactor = new ContractInteractor(provider, provider, currentChainId);
+          setContractInteractor(interactor);
+          
+          // Get token info when contract is initialized
+          if (interactor.isContractAvailable()) {
+            try {
+              const info = await interactor.getTokenInfo();
+              setTokenInfo(info);
+            } catch (error) {
+              console.error('Failed to get token info:', error);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to initialize contract interactor:', error);
+          setContractInteractor(null);
+        }
+      };
+      
+      initializeContract();
+    }
+  }, [primaryWallet, currentChainId]);
 
   // Get current chain from wallet
   const getCurrentChain = useCallback(async () => {
@@ -153,6 +186,51 @@ export function useWallet() {
     }
   }, [primaryWallet?.address, wallets]);
 
+  // Get token balance
+  const getTokenBalance = useCallback(async () => {
+    if (!contractInteractor || !primaryWallet?.address) return null;
+    
+    try {
+      const balance = await contractInteractor.getTokenBalance(primaryWallet.address);
+      setTokenBalance(balance);
+      return balance;
+    } catch (error) {
+      console.error('Failed to get token balance:', error);
+      return null;
+    }
+  }, [contractInteractor, primaryWallet?.address]);
+
+  // Transfer tokens
+  const transferTokens = useCallback(async (to: string, amount: string) => {
+    if (!contractInteractor || !primaryWallet?.address) return null;
+    
+    setIsLoading(true);
+    try {
+      const weiAmount = parseTokenAmount(amount, tokenInfo?.decimals || 18);
+      const txHash = await contractInteractor.transferTokens(to, weiAmount);
+      return txHash;
+    } catch (error) {
+      console.error('Failed to transfer tokens:', error);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [contractInteractor, primaryWallet?.address, tokenInfo?.decimals]);
+
+  // Get token information
+  const getTokenInfo = useCallback(async () => {
+    if (!contractInteractor) return null;
+    
+    try {
+      const info = await contractInteractor.getTokenInfo();
+      setTokenInfo(info);
+      return info;
+    } catch (error) {
+      console.error('Failed to get token info:', error);
+      return null;
+    }
+  }, [contractInteractor]);
+
   // Link external wallet (this will trigger Privy's wallet linking flow)
   const linkExternalWallet = useCallback(async () => {
     try {
@@ -193,8 +271,9 @@ export function useWallet() {
     if (authenticated && primaryWallet?.address && wallets.length) {
       getCurrentChain();
       getBalance();
+      getTokenBalance();
     }
-  }, [authenticated, primaryWallet?.address, wallets.length, getCurrentChain, getBalance]);
+  }, [authenticated, primaryWallet?.address, wallets.length, getCurrentChain, getBalance, getTokenBalance]);
 
   return {
     // Wallet state
@@ -203,7 +282,10 @@ export function useWallet() {
     currentChainId,
     isLoading,
     balance,
+    tokenBalance,
+    tokenInfo,
     authenticated,
+    contractInteractor,
     
     // Wallet actions
     getCurrentChain,
@@ -214,6 +296,11 @@ export function useWallet() {
     linkExternalWallet,
     unlinkExternalWallet,
     setPrimaryWalletAddress,
+    
+    // Contract actions
+    getTokenBalance,
+    transferTokens,
+    getTokenInfo,
     
     // Auth actions
     login,
