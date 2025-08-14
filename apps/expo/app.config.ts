@@ -2,8 +2,8 @@ import type { ConfigContext, ExpoConfig } from "expo/config";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: "expo",
-  slug: "expo",
+  name: "POAPStays",
+  slug: "poapstays",
   scheme: "poapstays", // 👈 Set your scheme for deep links
   version: "0.1.0",
   orientation: "portrait",
@@ -15,26 +15,35 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   newArchEnabled: true,
   assetBundlePatterns: ["**/*"],
   ios: {
-    bundleIdentifier: "your.bundle.identifier",
+    bundleIdentifier: "com.poapstays.app",
     supportsTablet: true,
+    usesAppleSignIn: true,
     icon: {
       light: "./assets/icon-light.png",
       dark: "./assets/icon-dark.png",
     },
+    infoPlist: {
+      NSAppTransportSecurity: {
+        NSAllowsArbitraryLoads: true
+      }
+    }
   },
   android: {
-    package: "your.bundle.identifier",
+    package: "com.poapstays.app",
     adaptiveIcon: {
       foregroundImage: "./assets/icon-light.png",
       backgroundColor: "#1F104A",
     },
     edgeToEdgeEnabled: true,
   },
-  // extra: {
-  //   eas: {
-  //     projectId: "your-eas-project-id",
-  //   },
-  // },
+  extra: {
+    // Privy configuration - these should match your working project
+    privyAppId: process.env.EXPO_PUBLIC_PRIVY_APP_ID,
+    privyClientId: process.env.EXPO_PUBLIC_PRIVY_CLIENT_ID,
+    "eas": {
+        "projectId": "49e46c33-e7f1-414e-8ebd-707805cdbff9"
+    }
+  },
   experiments: {
     tsconfigPaths: true,
     typedRoutes: true,
@@ -43,6 +52,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     "expo-router",
     "expo-secure-store",
     "expo-web-browser",
+    "expo-apple-authentication",
     [
       "expo-splash-screen",
       {

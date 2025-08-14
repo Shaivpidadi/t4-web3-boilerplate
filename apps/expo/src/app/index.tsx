@@ -14,8 +14,8 @@ function PostCard(props: {
   onDelete: () => void;
 }) {
   return (
-    <View className="flex flex-row rounded-lg bg-muted p-4">
-      <View className="flex-grow">
+    <View style={{ flexDirection: "row", borderRadius: 8, backgroundColor: "#f3f4f6", padding: 16 }}>
+      <View style={{ flex: 1 }}>
         <Link
           asChild
           href={{
@@ -23,16 +23,16 @@ function PostCard(props: {
             params: { id: props.post.id },
           }}
         >
-          <Pressable className="">
-            <Text className="text-xl font-semibold text-primary">
+          <Pressable>
+            <Text style={{ fontSize: 20, fontWeight: "600", color: "#3b82f6" }}>
               {props.post.title}
             </Text>
-            <Text className="mt-2 text-foreground">{props.post.content}</Text>
+            <Text style={{ marginTop: 8, color: "#374151" }}>{props.post.content}</Text>
           </Pressable>
         </Link>
       </View>
       <Pressable onPress={props.onDelete}>
-        <Text className="font-bold uppercase text-primary">Delete</Text>
+        <Text style={{ fontWeight: "bold", textTransform: "uppercase", color: "#3b82f6" }}>Delete</Text>
       </Pressable>
     </View>
   );
@@ -55,31 +55,56 @@ function CreatePost() {
   );
 
   return (
-    <View className="mt-4 flex gap-2">
+    <View style={{ marginTop: 16, gap: 8 }}>
       <TextInput
-        className="items-center rounded-md border border-input bg-background px-3 text-lg leading-[1.25] text-foreground"
+        style={{
+          alignItems: "center",
+          borderRadius: 6,
+          borderWidth: 1,
+          borderColor: "#d1d5db",
+          backgroundColor: "#ffffff",
+          paddingHorizontal: 12,
+          fontSize: 18,
+          lineHeight: 22.5,
+          color: "#374151"
+        }}
         value={title}
         onChangeText={setTitle}
         placeholder="Title"
       />
       {error?.data?.zodError?.fieldErrors.title && (
-        <Text className="mb-2 text-destructive">
+        <Text style={{ marginBottom: 8, color: "#dc2626" }}>
           {error.data.zodError.fieldErrors.title}
         </Text>
       )}
       <TextInput
-        className="items-center rounded-md border border-input bg-background px-3 text-lg leading-[1.25] text-foreground"
+        style={{
+          alignItems: "center",
+          borderRadius: 6,
+          borderWidth: 1,
+          borderColor: "#d1d5db",
+          backgroundColor: "#ffffff",
+          paddingHorizontal: 12,
+          fontSize: 18,
+          lineHeight: 22.5,
+          color: "#374151"
+        }}
         value={content}
         onChangeText={setContent}
         placeholder="Content"
       />
       {error?.data?.zodError?.fieldErrors.content && (
-        <Text className="mb-2 text-destructive">
+        <Text style={{ marginBottom: 8, color: "#dc2626" }}>
           {error.data.zodError.fieldErrors.content}
         </Text>
       )}
       <Pressable
-        className="flex items-center rounded bg-primary p-2"
+        style={{
+          alignItems: "center",
+          borderRadius: 6,
+          backgroundColor: "#3b82f6",
+          padding: 8
+        }}
         onPress={() => {
           mutate({
             title,
@@ -87,10 +112,10 @@ function CreatePost() {
           });
         }}
       >
-        <Text className="text-foreground">Create</Text>
+        <Text style={{ color: "#ffffff" }}>Create</Text>
       </Pressable>
       {error?.data?.code === "UNAUTHORIZED" && (
-        <Text className="mt-2 text-destructive">
+        <Text style={{ marginTop: 8, color: "#dc2626" }}>
           You need to be logged in to create a post
         </Text>
       )}
@@ -99,26 +124,18 @@ function CreatePost() {
 }
 
 function MobileAuth() {
-  const { user, ready, login } = usePrivy();
+  const { user } = usePrivy();
   const router = useRouter();
-
-  if (!ready) {
-    return (
-      <Text className="pb-2 text-center text-xl font-semibold text-zinc-900">
-        Loading...
-      </Text>
-    );
-  }
 
   if (!user) {
     return (
-      <View className="flex items-center gap-4">
-        <Text className="pb-2 text-center text-xl font-semibold text-zinc-900">
+      <View style={{ alignItems: "center", gap: 16 }}>
+        <Text style={{ paddingBottom: 8, textAlign: "center", fontSize: 20, fontWeight: "600", color: "#18181b" }}>
           Not logged in
         </Text>
         <Button
-          onPress={() => login({ loginMethod: "google" })}
-          title="Sign In With Google"
+          onPress={() => router.push("/login")}
+          title="Sign In"
           color={"#5B65E9"}
         />
       </View>
@@ -126,18 +143,18 @@ function MobileAuth() {
   }
 
   return (
-    <View className="flex items-center gap-4">
-      <Text className="pb-2 text-center text-xl font-semibold text-zinc-900">
-        Hello, {user.email?.address || user.wallet?.address || "User"}!
+    <View style={{ alignItems: "center", gap: 16 }}>
+      <Text style={{ paddingBottom: 8, textAlign: "center", fontSize: 20, fontWeight: "600", color: "#18181b" }}>
+        Hello, {user.id}!
       </Text>
-      <View className="flex flex-row gap-2">
+      <View style={{ flexDirection: "row", gap: 8 }}>
         <Button
           onPress={() => router.push("/profile")}
           title="Profile"
           color={"#007AFF"}
         />
         <Button
-          onPress={() => login({ loginMethod: "google" })}
+          onPress={() => router.push("/login")}
           title="Switch Account"
           color={"#5B65E9"}
         />
@@ -159,18 +176,18 @@ export default function Index() {
   );
 
   return (
-    <SafeAreaView className="bg-background">
+    <SafeAreaView style={{ backgroundColor: "#ffffff" }}>
       {/* Changes page title visible on the header */}
       <Stack.Screen options={{ title: "Home Page" }} />
-      <View className="h-full w-full bg-background p-4">
-        <Text className="pb-2 text-center text-5xl font-bold text-foreground">
-          Create <Text className="text-primary">T3</Text> Turbo
+      <View style={{ height: "100%", width: "100%", backgroundColor: "#ffffff", padding: 16 }}>
+        <Text style={{ paddingBottom: 8, textAlign: "center", fontSize: 48, fontWeight: "bold", color: "#374151" }}>
+          Create <Text style={{ color: "#3b82f6" }}>T3</Text> Turbo
         </Text>
 
         <MobileAuth />
 
-        <View className="py-2">
-          <Text className="font-semibold italic text-primary">
+        <View style={{ paddingVertical: 8 }}>
+          <Text style={{ fontWeight: "600", fontStyle: "italic", color: "#3b82f6" }}>
             Press on a post
           </Text>
         </View>
@@ -179,7 +196,7 @@ export default function Index() {
           data={postQuery.data ?? []}
           estimatedItemSize={20}
           keyExtractor={(item) => item.id}
-          ItemSeparatorComponent={() => <View className="h-2" />}
+          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
           renderItem={(p) => (
             <PostCard
               post={p.item}

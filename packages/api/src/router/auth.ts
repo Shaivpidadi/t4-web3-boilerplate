@@ -58,7 +58,7 @@ export const authRouter = {
 
       // Create session (60 minutes)
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
-      const sessionToken = crypto.randomUUID();
+      const sessionToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
       
       const [session] = await ctx.db
         .insert(Session)

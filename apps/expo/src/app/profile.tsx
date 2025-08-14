@@ -6,7 +6,7 @@ import { usePrivy } from "@privy-io/expo";
 import * as Clipboard from "expo-clipboard";
 
 export default function ProfileScreen() {
-  const { user, logout, ready } = usePrivy();
+  const { user, logout } = usePrivy();
   const router = useRouter();
 
   const handleSignOut = async () => {
@@ -17,21 +17,6 @@ export default function ProfileScreen() {
       console.error("Logout failed:", error);
     }
   };
-
-  const copyAddress = async () => {
-    if (user?.wallet?.address) {
-      await Clipboard.setStringAsync(user.wallet.address);
-      Alert.alert("Copied!", "Wallet address copied to clipboard");
-    }
-  };
-
-  if (!ready) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text>Loading...</Text>
-      </SafeAreaView>
-    );
-  }
 
   if (!user) {
     router.replace("/login");
@@ -44,20 +29,15 @@ export default function ProfileScreen() {
         <Text style={styles.title}>Profile</Text>
         
         <View style={styles.infoSection}>
-          <Text style={styles.label}>Email</Text>
-          <Text style={styles.value}>{user.email?.address || "Not available"}</Text>
+          <Text style={styles.label}>User ID</Text>
+          <Text style={styles.value}>{user.id || "Not available"}</Text>
         </View>
 
         <View style={styles.infoSection}>
-          <Text style={styles.label}>Wallet Address</Text>
-          <View style={styles.addressContainer}>
-            <Text style={styles.address} numberOfLines={1}>
-              {user.wallet?.address || "Not available"}
-            </Text>
-            <TouchableOpacity style={styles.copyButton} onPress={copyAddress}>
-              <Text style={styles.copyButtonText}>Copy</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.label}>Linked Accounts</Text>
+          <Text style={styles.value}>
+            {user.linked_accounts?.length ? `${user.linked_accounts.length} accounts` : "No linked accounts"}
+          </Text>
         </View>
 
         <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
@@ -95,28 +75,6 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 16,
     color: "#333",
-  },
-  addressContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  address: {
-    fontSize: 16,
-    color: "#333",
-    flex: 1,
-    marginRight: 10,
-  },
-  copyButton: {
-    backgroundColor: "#007AFF",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  copyButtonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "500",
   },
   signOutButton: {
     backgroundColor: "#FF3B30",
