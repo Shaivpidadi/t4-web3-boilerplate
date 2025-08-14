@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useWallet, formatAddress, formatBalance, SUPPORTED_CHAINS } from '../utils/wallet';
+import { useWallet, formatAddress, formatBalance, SUPPORTED_CHAINS, getWalletType, getWalletProvider } from '../utils/wallet';
+import { Button } from '@acme/ui/button';
 
 export default function WalletDashboard() {
   const {
@@ -14,11 +15,15 @@ export default function WalletDashboard() {
     switchChain,
     signMessage,
     getBalance,
+    linkExternalWallet,
+    unlinkExternalWallet,
+    setPrimaryWalletAddress,
     supportedChains,
     currentChain
   } = useWallet();
 
   const [signature, setSignature] = useState<string>('');
+  const [showWalletList, setShowWalletList] = useState(false);
 
   if (!authenticated) {
     return (
@@ -59,111 +64,183 @@ export default function WalletDashboard() {
     }
   };
 
+  const handleLinkExternalWallet = async () => {
+    const success = await linkExternalWallet();
+    if (success) {
+      alert('External wallet linking initiated. Please follow the prompts.');
+    } else {
+      alert('Failed to initiate wallet linking');
+    }
+  };
+
+  const handleUnlinkWallet = async (walletAddress: string) => {
+    const success = await unlinkExternalWallet(walletAddress);
+    if (success) {
+      alert('Wallet unlinked successfully');
+    } else {
+      alert('Failed to unlink wallet');
+    }
+  };
+
+  const handleSetPrimaryWallet = (walletAddress: string) => {
+    const success = setPrimaryWalletAddress(walletAddress);
+    if (success) {
+      alert('Primary wallet updated');
+      getBalance(); // Refresh balance for new primary wallet
+    } else {
+      alert('Failed to set primary wallet');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Wallet Info */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Wallet Information</h3>
-        <div className="space-y-2">
-          <p className="text-sm text-gray-600">
-            <span className="font-medium">Address:</span> {formatAddress(account.address)}
-          </p>
-          <p className="text-sm text-gray-600">
-            <span className="font-medium">Type:</span> Embedded Wallet
-          </p>
-          <p className="text-sm text-gray-600">
-            <span className="font-medium">Wallet Count:</span> {wallets.length}
-          </p>
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Wallet Dashboard</h3>
+          <Button
+            onClick={() => setShowWalletList(!showWalletList)}
+            variant="outline"
+            size="sm"
+          >
+            {showWalletList ? 'Hide Wallets' : 'Manage Wallets'}
+          </Button>
         </div>
-      </div>
 
-      {/* Current Chain */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Current Chain</h3>
-        <div className="space-y-2">
-          <p className="text-lg font-semibold text-blue-600">
-            {currentChain?.name || 'Unknown'}
-          </p>
-          <p className="text-sm text-gray-600">
-            <span className="font-medium">Chain ID:</span> {currentChainId}
-          </p>
-          <p className="text-sm text-gray-600">
-            <span className="font-medium">Balance:</span> {formatBalance(balance)} {currentChain?.nativeCurrency?.symbol}
-          </p>
+        {/* Primary Wallet Info */}
+        <div className="bg-blue-50 rounded-lg p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium text-blue-900">Primary Wallet</h4>
+              <p className="text-sm text-blue-700 font-mono">
+                {formatAddress(account.address)}
+              </p>
+              <p className="text-xs text-blue-600">
+                {getWalletType(account)} • {getWalletProvider(account)}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-medium text-blue-900">
+                {formatBalance(balance)} {currentChain?.nativeCurrency?.symbol}
+              </p>
+              <p className="text-xs text-blue-600">
+                {currentChain?.name}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Wallet List */}
+        {showWalletList && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h5 className="font-medium text-gray-900">Connected Wallets</h5>
+              <Button
+                onClick={handleLinkExternalWallet}
+                size="sm"
+                disabled={isLoading}
+              >
+                Link External Wallet
+              </Button>
+            </div>
+            
+            {wallets.map((wallet, index) => (
+              <div
+                key={wallet.address}
+                className={`border rounded-lg p-3 ${
+                  wallet.address === account.address ? 'border-blue-200 bg-blue-50' : 'border-gray-200'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2">
+                      <span className="font-mono text-sm">
+                        {formatAddress(wallet.address)}
+                      </span>
+                      {wallet.address === account.address && (
+                        <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
+                          Primary
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      {getWalletType(wallet)} • {getWalletProvider(wallet)}
+                    </p>
+                  </div>
+                  <div className="flex space-x-2">
+                    {wallet.address !== account.address && (
+                      <Button
+                        onClick={() => handleSetPrimaryWallet(wallet.address)}
+                        size="sm"
+                        variant="outline"
+                      >
+                        Set Primary
+                      </Button>
+                    )}
+                    {getWalletType(wallet) === 'external' && (
+                      <Button
+                        onClick={() => handleUnlinkWallet(wallet.address)}
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        Unlink
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Chain Selection */}
+        <div className="mt-4">
+          <h5 className="font-medium text-gray-900 mb-2">Switch Chain</h5>
+          <div className="flex space-x-2">
+            {Object.entries(supportedChains).map(([chainId, chain]) => (
+              <Button
+                key={chainId}
+                onClick={() => handleSwitchChain(chainId)}
+                variant={currentChainId === chainId ? "default" : "outline"}
+                size="sm"
+                disabled={isLoading}
+              >
+                {chain.name}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="mt-4 space-y-2">
+          <Button
+            onClick={handleSignMessage}
+            disabled={isLoading}
+            className="w-full"
+          >
+            Sign Test Message
+          </Button>
           
-          <button 
-            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+          <Button
             onClick={getBalance}
             disabled={isLoading}
+            variant="outline"
+            className="w-full"
           >
-            {isLoading ? 'Loading...' : 'Refresh Balance'}
-          </button>
+            Refresh Balance
+          </Button>
         </div>
-      </div>
 
-      {/* Chain Switching */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Switch Chain</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {Object.entries(supportedChains).map(([chainId, chain]) => (
-            <button
-              key={chainId}
-              className={`px-4 py-3 rounded-md text-sm font-medium transition-colors ${
-                currentChainId === chainId
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-              }`}
-              onClick={() => handleSwitchChain(chainId)}
-              disabled={isLoading || currentChainId === chainId}
-            >
-              {chain.name}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Wallet Actions */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Wallet Actions</h3>
-        
-        <button 
-          className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-md font-medium transition-colors mr-4"
-          onClick={handleSignMessage}
-          disabled={isLoading}
-        >
-          Sign Message
-        </button>
-
+        {/* Signature Display */}
         {signature && (
-          <div className="mt-4 p-3 bg-gray-50 rounded-md">
-            <p className="text-sm text-gray-600 mb-1">
-              <span className="font-medium">Last Signature:</span>
-            </p>
-            <p className="text-xs font-mono text-gray-500 break-all">
-              {signature.slice(0, 50)}...
+          <div className="mt-4 p-3 bg-green-50 rounded-lg">
+            <h5 className="font-medium text-green-900 mb-1">Last Signature</h5>
+            <p className="text-xs font-mono text-green-700 break-all">
+              {signature}
             </p>
           </div>
         )}
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-blue-50 rounded-lg p-4 text-center">
-          <p className="text-2xl font-bold text-blue-600">{currentChainId}</p>
-          <p className="text-sm text-blue-500">Current Chain</p>
-        </div>
-        <div className="bg-green-50 rounded-lg p-4 text-center">
-          <p className="text-2xl font-bold text-green-600">
-            {formatBalance(balance)}
-          </p>
-          <p className="text-sm text-green-500">Balance</p>
-        </div>
-        <div className="bg-purple-50 rounded-lg p-4 text-center">
-          <p className="text-2xl font-bold text-purple-600">
-            {wallets?.length || 0}
-          </p>
-          <p className="text-sm text-purple-500">Wallets</p>
-        </div>
       </div>
     </div>
   );

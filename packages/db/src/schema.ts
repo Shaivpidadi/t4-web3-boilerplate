@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -27,11 +27,6 @@ export const User = pgTable("user", (t) => ({
   id: t.uuid().notNull().primaryKey().defaultRandom(),
   privyUserId: t.text().notNull().unique(),
   email: t.text(),
-  walletAddress: t.text(),
-  // Enhanced wallet information
-  walletType: t.text().default('embedded'), // 'embedded' or 'external'
-  currentChainId: t.text().default('1'), // Default to Ethereum mainnet
-  preferredChainId: t.text().default('1'),
   createdAt: t.timestamp().defaultNow().notNull(),
   lastLoginAt: t.timestamp().defaultNow().notNull(),
 }));
@@ -39,14 +34,41 @@ export const User = pgTable("user", (t) => ({
 export const CreateUserSchema = createInsertSchema(User, {
   privyUserId: z.string(),
   email: z.string().email().optional(),
-  walletAddress: z.string().optional(),
-  walletType: z.string().optional(),
-  currentChainId: z.string().optional(),
-  preferredChainId: z.string().optional(),
 }).omit({
   id: true,
   createdAt: true,
   lastLoginAt: true,
+});
+
+// New Wallet table to support multiple wallets per user
+// This references the auth user table (which has text IDs)
+export const Wallet = pgTable("wallet", (t) => ({
+  id: t.uuid().notNull().primaryKey().defaultRandom(),
+  userId: t.text().notNull(), // References auth.user.id (text type)
+  address: t.text().notNull(),
+  type: t.text().notNull().default('embedded'), // 'embedded' or 'external'
+  provider: t.text().notNull().default('privy'), // 'privy', 'metamask', 'coinbase', etc.
+  chainId: t.text().default('1'), // Current chain ID
+  isPrimary: t.boolean().default(false), // Primary wallet for actions
+  isActive: t.boolean().default(true), // Whether wallet is active
+  createdAt: t.timestamp().defaultNow().notNull(),
+  updatedAt: t
+    .timestamp({ mode: "date", withTimezone: true })
+    .$onUpdateFn(() => sql`now()`),
+}));
+
+export const CreateWalletSchema = createInsertSchema(Wallet, {
+  userId: z.string(),
+  address: z.string(),
+  type: z.enum(['embedded', 'external']),
+  provider: z.string(),
+  chainId: z.string().optional(),
+  isPrimary: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
 
 // Session table for app sessions

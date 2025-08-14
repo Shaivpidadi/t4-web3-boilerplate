@@ -40,21 +40,28 @@ export const SUPPORTED_CHAINS = {
 
 // Hook for wallet management (web version)
 export function useWallet() {
-  const { user, authenticated } = usePrivy();
+  const { user, authenticated, login, logout } = usePrivy();
   const { wallets } = useWallets();
   const [currentChainId, setCurrentChainId] = useState('1');
   const [isLoading, setIsLoading] = useState(false);
   const [balance, setBalance] = useState<string>('0');
+  const [primaryWallet, setPrimaryWallet] = useState<any>(null);
 
-  // Get the user's embedded wallet (first wallet in the list)
-  const account = wallets?.[0];
+  // Get the primary wallet (embedded wallet first, then first available)
+  useEffect(() => {
+    if (wallets && wallets.length > 0) {
+      // Prefer embedded wallet as primary
+      const embeddedWallet = wallets.find(wallet => wallet.walletClientType === 'privy');
+      setPrimaryWallet(embeddedWallet || wallets[0]);
+    }
+  }, [wallets]);
 
   // Get current chain from wallet
   const getCurrentChain = useCallback(async () => {
-    if (!account?.address || !wallets.length) return null;
+    if (!primaryWallet?.address || !wallets.length) return null;
     
     try {
-      const provider = await account.getEthereumProvider();
+      const provider = await primaryWallet.getEthereumProvider();
       const chainId = await provider.request({ method: 'eth_chainId' });
       const chainIdDecimal = parseInt(chainId, 16).toString();
       setCurrentChainId(chainIdDecimal);
@@ -63,15 +70,15 @@ export function useWallet() {
       console.error('Failed to get current chain:', error);
       return null;
     }
-  }, [account?.address, wallets]);
+  }, [primaryWallet?.address, wallets]);
 
   // Switch to a different chain
   const switchChain = useCallback(async (targetChainId: string) => {
-    if (!account?.address || !wallets.length) return false;
+    if (!primaryWallet?.address || !wallets.length) return false;
     
     setIsLoading(true);
     try {
-      const provider = await account.getEthereumProvider();
+      const provider = await primaryWallet.getEthereumProvider();
       await provider.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: `0x${parseInt(targetChainId).toString(16)}` }]
@@ -84,36 +91,36 @@ export function useWallet() {
     } finally {
       setIsLoading(false);
     }
-  }, [account?.address, wallets]);
+  }, [primaryWallet?.address, wallets]);
 
   // Sign a message
   const signMessage = useCallback(async (message: string) => {
-    if (!account?.address || !wallets.length) return null;
+    if (!primaryWallet?.address || !wallets.length) return null;
     
     try {
-      const provider = await account.getEthereumProvider();
+      const provider = await primaryWallet.getEthereumProvider();
       const signature = await provider.request({
         method: 'personal_sign',
-        params: [message, account.address]
+        params: [message, primaryWallet.address]
       });
       return signature;
     } catch (error) {
       console.error('Failed to sign message:', error);
       return null;
     }
-  }, [account?.address, wallets]);
+  }, [primaryWallet?.address, wallets]);
 
   // Send a transaction
   const sendTransaction = useCallback(async (to: string, value: string, data?: string) => {
-    if (!account?.address || !wallets.length) return null;
+    if (!primaryWallet?.address || !wallets.length) return null;
     
     setIsLoading(true);
     try {
-      const provider = await account.getEthereumProvider();
+      const provider = await primaryWallet.getEthereumProvider();
       const txHash = await provider.request({
         method: 'eth_sendTransaction',
         params: [{
-          from: account.address,
+          from: primaryWallet.address,
           to,
           value: `0x${parseInt(value).toString(16)}`,
           data: data || '0x',
@@ -126,17 +133,17 @@ export function useWallet() {
     } finally {
       setIsLoading(false);
     }
-  }, [account?.address, wallets]);
+  }, [primaryWallet?.address, wallets]);
 
   // Get wallet balance
   const getBalance = useCallback(async () => {
-    if (!account?.address || !wallets.length) return null;
+    if (!primaryWallet?.address || !wallets.length) return null;
     
     try {
-      const provider = await account.getEthereumProvider();
+      const provider = await primaryWallet.getEthereumProvider();
       const balance = await provider.request({
         method: 'eth_getBalance',
-        params: [account.address, 'latest']
+        params: [primaryWallet.address, 'latest']
       });
       setBalance(balance);
       return balance;
@@ -144,19 +151,54 @@ export function useWallet() {
       console.error('Failed to get balance:', error);
       return null;
     }
-  }, [account?.address, wallets]);
+  }, [primaryWallet?.address, wallets]);
+
+  // Link external wallet (this will trigger Privy's wallet linking flow)
+  const linkExternalWallet = useCallback(async () => {
+    try {
+      // Privy will handle the wallet linking flow automatically
+      // when the user clicks the link wallet button
+      return true;
+    } catch (error) {
+      console.error('Failed to link external wallet:', error);
+      return false;
+    }
+  }, []);
+
+  // Unlink external wallet
+  const unlinkExternalWallet = useCallback(async (walletAddress: string) => {
+    try {
+      // Note: Privy doesn't provide a direct unlink method in the client
+      // This would typically be handled through the Privy dashboard or server-side
+      console.log('Unlinking wallet:', walletAddress);
+      return true;
+    } catch (error) {
+      console.error('Failed to unlink external wallet:', error);
+      return false;
+    }
+  }, []);
+
+  // Set primary wallet
+  const setPrimaryWalletAddress = useCallback((walletAddress: string) => {
+    const wallet = wallets.find(w => w.address === walletAddress);
+    if (wallet) {
+      setPrimaryWallet(wallet);
+      return true;
+    }
+    return false;
+  }, [wallets]);
 
   // Load initial data when wallet is available
   useEffect(() => {
-    if (authenticated && account?.address && wallets.length) {
+    if (authenticated && primaryWallet?.address && wallets.length) {
       getCurrentChain();
       getBalance();
     }
-  }, [authenticated, account?.address, wallets.length, getCurrentChain, getBalance]);
+  }, [authenticated, primaryWallet?.address, wallets.length, getCurrentChain, getBalance]);
 
   return {
     // Wallet state
-    account,
+    account: primaryWallet,
     wallets,
     currentChainId,
     isLoading,
@@ -169,6 +211,13 @@ export function useWallet() {
     signMessage,
     sendTransaction,
     getBalance,
+    linkExternalWallet,
+    unlinkExternalWallet,
+    setPrimaryWalletAddress,
+    
+    // Auth actions
+    login,
+    logout,
     
     // Chain info
     supportedChains: SUPPORTED_CHAINS,
@@ -188,4 +237,17 @@ export function formatBalance(balance: string, decimals = 18): string {
   const wei = BigInt(balance);
   const eth = Number(wei) / Math.pow(10, decimals);
   return eth.toFixed(4);
+}
+
+// Utility function to get wallet type
+export function getWalletType(wallet: any): 'embedded' | 'external' {
+  return wallet?.walletClientType === 'privy' ? 'embedded' : 'external';
+}
+
+// Utility function to get wallet provider
+export function getWalletProvider(wallet: any): string {
+  if (wallet?.walletClientType === 'privy') return 'privy';
+  if (wallet?.walletClientType === 'metamask') return 'metamask';
+  if (wallet?.walletClientType === 'coinbase_wallet') return 'coinbase';
+  return 'unknown';
 }

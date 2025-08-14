@@ -1,8 +1,8 @@
 import type { TRPCRouterRecord } from "@trpc/server";
 import { z } from "zod/v4";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
-import { User, Session, CreateUserSchema, CreateSessionSchema } from "@acme/db/schema";
+import { User, Session, Wallet, CreateUserSchema, CreateSessionSchema, CreateWalletSchema } from "@acme/db/schema";
 
 import { protectedProcedure, publicProcedure } from "../trpc";
 
@@ -30,7 +30,6 @@ export const authRouter = {
       const mockUserInfo = {
         privyUserId: "mock-privy-user-id",
         email: "user@example.com",
-        walletAddress: "0x1234567890abcdef",
       };
 
       // Upsert user
@@ -39,14 +38,12 @@ export const authRouter = {
         .values({
           privyUserId: mockUserInfo.privyUserId,
           email: mockUserInfo.email,
-          walletAddress: mockUserInfo.walletAddress,
           lastLoginAt: new Date(),
         })
         .onConflictDoUpdate({
           target: User.privyUserId,
           set: {
             email: mockUserInfo.email,
-            walletAddress: mockUserInfo.walletAddress,
             lastLoginAt: new Date(),
           },
         })
@@ -75,7 +72,6 @@ export const authRouter = {
         user: {
           id: user.id,
           email: user.email,
-          walletAddress: user.walletAddress,
         },
       };
     }),
@@ -87,7 +83,144 @@ export const authRouter = {
     return {
       id: "mock-user-id",
       email: "user@example.com",
-      walletAddress: "0x1234567890abcdef",
     };
   }),
+
+  // Get user wallets
+  getWallets: protectedProcedure.query(async ({ ctx }) => {
+    // TODO: Add proper user authentication
+    // For now, we'll return mock data
+    return [
+      {
+        id: "mock-wallet-1",
+        address: "0x1234567890abcdef",
+        type: "embedded" as const,
+        provider: "privy",
+        chainId: "1",
+        isPrimary: true,
+        isActive: true,
+      }
+    ];
+  }),
+
+  // Create or update wallet
+  upsertWallet: protectedProcedure
+    .input(CreateWalletSchema)
+    .mutation(async ({ ctx, input }) => {
+      // TODO: Add proper user authentication
+      // For now, we'll use a mock user ID
+      const mockUserId = "mock-user-id";
+
+      // Check if wallet already exists
+      const existingWallet = await ctx.db
+        .select()
+        .from(Wallet)
+        .where(
+          and(
+            eq(Wallet.userId, mockUserId),
+            eq(Wallet.address, input.address)
+          )
+        )
+        .limit(1);
+
+      if (existingWallet.length > 0) {
+        // Update existing wallet
+        const existingWalletRecord = existingWallet[0];
+        if (!existingWalletRecord) {
+          throw new Error("Existing wallet record not found");
+        }
+
+        const updatedWallets = await ctx.db
+          .update(Wallet)
+          .set({
+            type: input.type,
+            provider: input.provider,
+            chainId: input.chainId,
+            isPrimary: input.isPrimary,
+            isActive: input.isActive,
+            updatedAt: new Date(),
+          })
+          .where(eq(Wallet.id, existingWalletRecord.id))
+          .returning();
+
+        const updatedWallet = updatedWallets[0];
+        if (!updatedWallet) {
+          throw new Error("Failed to update wallet");
+        }
+
+        return updatedWallet;
+      } else {
+        // Create new wallet
+        const newWallets = await ctx.db
+          .insert(Wallet)
+          .values({
+            userId: mockUserId,
+            address: input.address,
+            type: input.type,
+            provider: input.provider,
+            chainId: input.chainId,
+            isPrimary: input.isPrimary,
+            isActive: input.isActive,
+          })
+          .returning();
+
+        const newWallet = newWallets[0];
+        if (!newWallet) {
+          throw new Error("Failed to create wallet");
+        }
+
+        return newWallet;
+      }
+    }),
+
+  // Set primary wallet
+  setPrimaryWallet: protectedProcedure
+    .input(z.object({
+      walletId: z.string().uuid(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // TODO: Add proper user authentication
+      const mockUserId = "mock-user-id";
+
+      // First, unset all primary wallets for this user
+      await ctx.db
+        .update(Wallet)
+        .set({ isPrimary: false })
+        .where(eq(Wallet.userId, mockUserId));
+
+      // Then set the specified wallet as primary
+      const primaryWallets = await ctx.db
+        .update(Wallet)
+        .set({ isPrimary: true })
+        .where(eq(Wallet.id, input.walletId))
+        .returning();
+
+      const primaryWallet = primaryWallets[0];
+      if (!primaryWallet) {
+        throw new Error("Wallet not found");
+      }
+
+      return primaryWallet;
+    }),
+
+  // Deactivate wallet
+  deactivateWallet: protectedProcedure
+    .input(z.object({
+      walletId: z.string().uuid(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // TODO: Add proper user authentication
+      const deactivatedWallets = await ctx.db
+        .update(Wallet)
+        .set({ isActive: false })
+        .where(eq(Wallet.id, input.walletId))
+        .returning();
+
+      const deactivatedWallet = deactivatedWallets[0];
+      if (!deactivatedWallet) {
+        throw new Error("Wallet not found");
+      }
+
+      return deactivatedWallet;
+    }),
 } satisfies TRPCRouterRecord;
