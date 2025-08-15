@@ -1,12 +1,12 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { usePrivy } from "@privy-io/expo";
-import * as Clipboard from "expo-clipboard";
 
 export default function ProfileScreen() {
-  const { user, logout } = usePrivy();
+  const { logout, user } = usePrivy();
   const router = useRouter();
 
   const handleSignOut = async () => {
@@ -27,7 +27,7 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Profile</Text>
-        
+
         <View style={styles.infoSection}>
           <Text style={styles.label}>User ID</Text>
           <Text style={styles.value}>{user.id || "Not available"}</Text>
@@ -36,7 +36,9 @@ export default function ProfileScreen() {
         <View style={styles.infoSection}>
           <Text style={styles.label}>Linked Accounts</Text>
           <Text style={styles.value}>
-            {user.linked_accounts?.length ? `${user.linked_accounts.length} accounts` : "No linked accounts"}
+            {user.linked_accounts?.length
+              ? `${user.linked_accounts.length} accounts`
+              : "No linked accounts"}
           </Text>
         </View>
 

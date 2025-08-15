@@ -1,10 +1,12 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { usePrivyViem } from '../hooks/usePrivyViem';
-import { Button } from '@acme/ui/button';
-import { Input } from '@acme/ui/input';
-import { Label } from '@acme/ui/label';
+import React, { useState } from "react";
+
+import { Button } from "@acme/ui/button";
+import { Input } from "@acme/ui/input";
+import { Label } from "@acme/ui/label";
+
+import { usePrivyViem } from "../hooks/usePrivyViem";
 
 export default function SmartContractPanel() {
   const {
@@ -17,44 +19,54 @@ export default function SmartContractPanel() {
     getNameToFavoriteNumber,
     getPerson,
     removeLastPerson,
-    contractInteractor
   } = usePrivyViem();
 
-  const [favoriteNumber, setFavoriteNumber] = useState('');
-  const [personName, setPersonName] = useState('');
-  const [personNumber, setPersonNumber] = useState('');
-  const [searchName, setSearchName] = useState('');
-  const [personIndex, setPersonIndex] = useState('');
+  const [favoriteNumber, setFavoriteNumber] = useState("");
+  const [personName, setPersonName] = useState("");
+  const [personNumber, setPersonNumber] = useState("");
+  const [searchName, setSearchName] = useState("");
+  const [personIndex, setPersonIndex] = useState("");
   const [storedNumber, setStoredNumber] = useState<number | null>(null);
   const [searchResult, setSearchResult] = useState<number | null>(null);
-  const [personResult, setPersonResult] = useState<{ name: string; favoriteNumber: number } | null>(null);
-  const [lastTxHash, setLastTxHash] = useState('');
+  const [personResult, setPersonResult] = useState<{
+    name: string;
+    favoriteNumber: number;
+  } | null>(null);
+  const [lastTxHash, setLastTxHash] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   if (!authenticated) {
     return (
-      <div className="bg-gray-50 rounded-lg p-6 text-center">
-        <h3 className="text-lg font-semibold text-gray-700 mb-2">No Wallet Connected</h3>
-        <p className="text-gray-500">Connect your wallet through Privy to interact with smart contracts</p>
+      <div className="rounded-lg bg-gray-50 p-6 text-center">
+        <h3 className="mb-2 text-lg font-semibold text-gray-700">
+          No Wallet Connected
+        </h3>
+        <p className="text-gray-500">
+          Connect your wallet through Privy to interact with smart contracts
+        </p>
       </div>
     );
   }
 
   if (!isReady) {
     return (
-      <div className="bg-gray-50 rounded-lg p-6 text-center">
-        <h3 className="text-lg font-semibold text-gray-700 mb-2">Loading Contract</h3>
-        <p className="text-gray-500">Please wait while we connect to the smart contract...</p>
+      <div className="rounded-lg bg-gray-50 p-6 text-center">
+        <h3 className="mb-2 text-lg font-semibold text-gray-700">
+          Loading Contract
+        </h3>
+        <p className="text-gray-500">
+          Please wait while we connect to the smart contract...
+        </p>
       </div>
     );
   }
 
-  const isContractAvailable = contractInteractor?.isContractAvailable();
-  const contractAddress = contractInteractor?.getContractAddress();
+  const isContractAvailable = true; // Contract is always available on Sepolia
+  const contractAddress = "0x2331fb827792879D21e11f7e13bA0d57391393D5";
 
   const handleStore = async () => {
     if (!favoriteNumber) {
-      alert('Please enter a favorite number');
+      alert("Please enter a favorite number");
       return;
     }
 
@@ -62,13 +74,13 @@ export default function SmartContractPanel() {
       setIsLoading(true);
       const txHash = await store(parseInt(favoriteNumber));
       setLastTxHash(txHash);
-      setFavoriteNumber('');
-      alert('Number stored successfully!');
+      setFavoriteNumber("");
+      alert("Number stored successfully!");
       // Refresh the stored number
       const retrieved = await retrieve();
       setStoredNumber(retrieved);
     } catch (error) {
-      alert('Store failed: ' + (error as Error).message);
+      alert("Store failed: " + (error as Error).message);
     } finally {
       setIsLoading(false);
     }
@@ -79,9 +91,9 @@ export default function SmartContractPanel() {
       setIsLoading(true);
       const number = await retrieve();
       setStoredNumber(number);
-      alert('Number retrieved successfully!');
+      alert("Number retrieved successfully!");
     } catch (error) {
-      alert('Retrieve failed: ' + (error as Error).message);
+      alert("Retrieve failed: " + (error as Error).message);
     } finally {
       setIsLoading(false);
     }
@@ -89,7 +101,7 @@ export default function SmartContractPanel() {
 
   const handleAddPerson = async () => {
     if (!personName || !personNumber) {
-      alert('Please enter both name and favorite number');
+      alert("Please enter both name and favorite number");
       return;
     }
 
@@ -97,11 +109,12 @@ export default function SmartContractPanel() {
       setIsLoading(true);
       const txHash = await addPerson(personName, parseInt(personNumber));
       setLastTxHash(txHash);
-      setPersonName('');
-      setPersonNumber('');
-      alert('Person added successfully!');
+      setPersonName("");
+      setPersonNumber("");
+      alert("Person added successfully!");
     } catch (error) {
-      alert('Add person failed: ' + (error as Error).message);
+      console.log(error);
+      alert("Add person failed: " + (error as Error).message);
     } finally {
       setIsLoading(false);
     }
@@ -109,7 +122,7 @@ export default function SmartContractPanel() {
 
   const handleSearchByName = async () => {
     if (!searchName) {
-      alert('Please enter a name to search');
+      alert("Please enter a name to search");
       return;
     }
 
@@ -118,7 +131,7 @@ export default function SmartContractPanel() {
       const number = await getNameToFavoriteNumber(searchName);
       setSearchResult(number);
     } catch (error) {
-      alert('Search failed: ' + (error as Error).message);
+      alert("Search failed: " + (error as Error).message);
     } finally {
       setIsLoading(false);
     }
@@ -126,7 +139,7 @@ export default function SmartContractPanel() {
 
   const handleGetPerson = async () => {
     if (!personIndex) {
-      alert('Please enter a person index');
+      alert("Please enter a person index");
       return;
     }
 
@@ -135,7 +148,7 @@ export default function SmartContractPanel() {
       const person = await getPerson(parseInt(personIndex));
       setPersonResult(person);
     } catch (error) {
-      alert('Get person failed: ' + (error as Error).message);
+      alert("Get person failed: " + (error as Error).message);
     } finally {
       setIsLoading(false);
     }
@@ -146,39 +159,47 @@ export default function SmartContractPanel() {
       setIsLoading(true);
       const txHash = await removeLastPerson();
       setLastTxHash(txHash);
-      alert('Last person removed successfully!');
+      alert("Last person removed successfully!");
     } catch (error) {
-      alert('Remove person failed: ' + (error as Error).message);
+      alert("Remove person failed: " + (error as Error).message);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">People Storage Contract Panel</h3>
+    <div className="rounded-lg bg-white p-6 shadow">
+      <div className="mb-6 flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900">
+          People Storage Contract Panel
+        </h3>
         <div className="text-sm text-gray-500">
-          Connected: {user?.wallet?.address ? `${user.wallet.address.slice(0, 6)}...${user.wallet.address.slice(-4)}` : 'Unknown'}
+          Connected:{" "}
+          {user?.wallet?.address
+            ? `${user.wallet.address.slice(0, 6)}...${user.wallet.address.slice(-4)}`
+            : "Unknown"}
         </div>
       </div>
 
       {/* Contract Status */}
       <div className="mb-6">
-        <div className="bg-blue-50 rounded-lg p-4">
-          <h4 className="font-medium text-blue-900 mb-2">Contract Status</h4>
+        <div className="rounded-lg bg-blue-50 p-4">
+          <h4 className="mb-2 font-medium text-blue-900">Contract Status</h4>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-blue-700">Contract Available:</span>
-              <span className={`font-medium ${isContractAvailable ? 'text-green-600' : 'text-red-600'}`}>
-                {isContractAvailable ? 'Yes' : 'No'}
+              <span
+                className={`font-medium ${isContractAvailable ? "text-green-600" : "text-red-600"}`}
+              >
+                {isContractAvailable ? "Yes" : "No"}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-blue-700">Contract Address:</span>
               <span className="font-mono text-xs text-blue-600">
-                {contractAddress === '0x0000000000000000000000000000000000000000' 
-                  ? 'Not Deployed' 
+                {contractAddress ===
+                "0x0000000000000000000000000000000000000000"
+                  ? "Not Deployed"
                   : contractAddress}
               </span>
             </div>
@@ -194,9 +215,11 @@ export default function SmartContractPanel() {
 
       {/* Store and Retrieve */}
       <div className="mb-6">
-        <div className="bg-green-50 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="font-medium text-green-900">Store & Retrieve Favorite Number</h4>
+        <div className="rounded-lg bg-green-50 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h4 className="font-medium text-green-900">
+              Store & Retrieve Favorite Number
+            </h4>
             <Button
               onClick={handleRetrieve}
               disabled={!isContractAvailable || isLoading}
@@ -206,15 +229,15 @@ export default function SmartContractPanel() {
               Retrieve
             </Button>
           </div>
-          
+
           {storedNumber !== null && (
-            <div className="mb-3 p-3 bg-green-100 rounded">
+            <div className="mb-3 rounded bg-green-100 p-3">
               <p className="text-sm font-medium text-green-800">
                 <strong>Stored Number:</strong> {storedNumber}
               </p>
             </div>
           )}
-          
+
           <div className="space-y-3">
             <div>
               <Label htmlFor="favorite-number">Favorite Number</Label>
@@ -229,10 +252,10 @@ export default function SmartContractPanel() {
             </div>
             <Button
               onClick={handleStore}
-              disabled={!isContractAvailable || isLoading || !favoriteNumber}
+              disabled={isLoading || !favoriteNumber}
               className="w-full"
             >
-              {isLoading ? 'Processing...' : 'Store Number'}
+              {isLoading ? "Processing..." : "Store Number"}
             </Button>
           </div>
         </div>
@@ -240,7 +263,7 @@ export default function SmartContractPanel() {
 
       {/* Add Person */}
       <div className="mb-6">
-        <h4 className="font-medium text-gray-900 mb-3">Add Person</h4>
+        <h4 className="mb-3 font-medium text-gray-900">Add Person</h4>
         <div className="space-y-3">
           <div>
             <Label htmlFor="person-name">Person Name</Label>
@@ -266,17 +289,19 @@ export default function SmartContractPanel() {
           </div>
           <Button
             onClick={handleAddPerson}
-            disabled={!isContractAvailable || isLoading || !personName || !personNumber}
+            disabled={
+              !isContractAvailable || isLoading || !personName || !personNumber
+            }
             className="w-full"
           >
-            {isLoading ? 'Processing...' : 'Add Person'}
+            {isLoading ? "Processing..." : "Add Person"}
           </Button>
         </div>
       </div>
 
       {/* Search by Name */}
       <div className="mb-6">
-        <h4 className="font-medium text-gray-900 mb-3">Search by Name</h4>
+        <h4 className="mb-3 font-medium text-gray-900">Search by Name</h4>
         <div className="space-y-3">
           <div>
             <Label htmlFor="search-name">Person Name</Label>
@@ -294,11 +319,11 @@ export default function SmartContractPanel() {
             disabled={!isContractAvailable || isLoading || !searchName}
             className="w-full"
           >
-            {isLoading ? 'Searching...' : 'Search'}
+            {isLoading ? "Searching..." : "Search"}
           </Button>
-          
+
           {searchResult !== null && (
-            <div className="p-3 bg-yellow-50 rounded">
+            <div className="rounded bg-yellow-50 p-3">
               <p className="text-sm font-medium text-yellow-800">
                 <strong>Favorite Number:</strong> {searchResult}
               </p>
@@ -309,7 +334,7 @@ export default function SmartContractPanel() {
 
       {/* Get Person by Index */}
       <div className="mb-6">
-        <h4 className="font-medium text-gray-900 mb-3">Get Person by Index</h4>
+        <h4 className="mb-3 font-medium text-gray-900">Get Person by Index</h4>
         <div className="space-y-3">
           <div>
             <Label htmlFor="person-index">Person Index</Label>
@@ -327,11 +352,11 @@ export default function SmartContractPanel() {
             disabled={!isContractAvailable || isLoading || !personIndex}
             className="w-full"
           >
-            {isLoading ? 'Loading...' : 'Get Person'}
+            {isLoading ? "Loading..." : "Get Person"}
           </Button>
-          
+
           {personResult && (
-            <div className="p-3 bg-indigo-50 rounded">
+            <div className="rounded bg-indigo-50 p-3">
               <p className="text-sm font-medium text-indigo-800">
                 <strong>Name:</strong> {personResult.name}
               </p>
@@ -345,22 +370,22 @@ export default function SmartContractPanel() {
 
       {/* Remove Last Person */}
       <div className="mb-6">
-        <h4 className="font-medium text-gray-900 mb-3">Remove Last Person</h4>
+        <h4 className="mb-3 font-medium text-gray-900">Remove Last Person</h4>
         <Button
           onClick={handleRemoveLastPerson}
           disabled={!isContractAvailable || isLoading}
           variant="destructive"
           className="w-full"
         >
-          {isLoading ? 'Processing...' : 'Remove Last Person'}
+          {isLoading ? "Processing..." : "Remove Last Person"}
         </Button>
       </div>
 
       {/* Last Transaction */}
       {lastTxHash && (
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h4 className="font-medium text-gray-900 mb-2">Last Transaction</h4>
-          <p className="text-xs font-mono text-gray-600 break-all">
+        <div className="rounded-lg bg-gray-50 p-4">
+          <h4 className="mb-2 font-medium text-gray-900">Last Transaction</h4>
+          <p className="break-all font-mono text-xs text-gray-600">
             {lastTxHash}
           </p>
           <div className="mt-2">
@@ -368,7 +393,7 @@ export default function SmartContractPanel() {
               href={`https://sepolia.etherscan.io/tx/${lastTxHash}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-blue-600 hover:text-blue-800 underline"
+              className="text-xs text-blue-600 underline hover:text-blue-800"
             >
               View on Etherscan →
             </a>
@@ -378,15 +403,22 @@ export default function SmartContractPanel() {
 
       {/* Contract Not Deployed Warning */}
       {!isContractAvailable && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <h4 className="font-medium text-yellow-900 mb-2">Contract Not Available</h4>
+        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+          <h4 className="mb-2 font-medium text-yellow-900">
+            Contract Not Available
+          </h4>
           <p className="text-sm text-yellow-700">
-            The smart contract is not available on this network. 
-            Switch to Sepolia testnet to test with the existing contract.
+            The smart contract is not available on this network. Switch to
+            Sepolia testnet to test with the existing contract.
           </p>
           <div className="mt-3">
             <Button
-              onClick={() => window.open('https://sepolia.etherscan.io/address/0x2331fb827792879D21e11f7e13bA0d57391393D5', '_blank')}
+              onClick={() =>
+                window.open(
+                  "https://sepolia.etherscan.io/address/0x2331fb827792879D21e11f7e13bA0d57391393D5",
+                  "_blank",
+                )
+              }
               variant="outline"
               size="sm"
             >

@@ -39,6 +39,7 @@ export function usePrivyViem() {
 
   const addPerson = async (name: string, favoriteNumber: number) => {
     if (!contractInteractor) throw new Error('Contract not ready');
+    console.log('Adding person:', name, favoriteNumber);
     return contractInteractor.addPerson(name, favoriteNumber);
   };
 

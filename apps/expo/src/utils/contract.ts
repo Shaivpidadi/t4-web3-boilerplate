@@ -189,6 +189,7 @@ export class ContractInteractor {
         throw new Error('No account available for transaction');
       }
       
+      console.log('Adding person:', name, favoriteNumber);
       const data = encodeFunctionData({
         abi: PEOPLE_STORAGE_ABI,
         functionName: 'addPerson',
