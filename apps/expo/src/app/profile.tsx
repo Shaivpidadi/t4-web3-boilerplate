@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Clipboard from "expo-clipboard";
@@ -9,6 +9,13 @@ export default function ProfileScreen() {
   const { logout, user } = usePrivy();
   const router = useRouter();
 
+  // Move navigation logic to useEffect to prevent state updates during render
+  useEffect(() => {
+    if (!user) {
+      router.replace("/login");
+    }
+  }, [user, router]);
+
   const handleSignOut = async () => {
     try {
       await logout();
@@ -18,8 +25,8 @@ export default function ProfileScreen() {
     }
   };
 
+  // Don't render anything if user is not available (navigation will happen in useEffect)
   if (!user) {
-    router.replace("/login");
     return null;
   }
 
@@ -42,9 +49,21 @@ export default function ProfileScreen() {
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-          <Text style={styles.signOutButtonText}>Sign Out</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonSection}>
+          <TouchableOpacity
+            style={[styles.button, styles.primaryButton]}
+            onPress={() => router.push("/")}
+          >
+            <Text style={styles.buttonText}>Smart Contract Panel</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.signOutButton}
+            onPress={handleSignOut}
+          >
+            <Text style={styles.signOutButtonText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -78,11 +97,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333",
   },
+  buttonSection: {
+    marginTop: 40,
+    gap: 16,
+  },
+  button: {
+    paddingVertical: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  primaryButton: {
+    backgroundColor: "#3b82f6",
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
   signOutButton: {
     backgroundColor: "#FF3B30",
     paddingVertical: 15,
     borderRadius: 8,
-    marginTop: 40,
   },
   signOutButtonText: {
     color: "#fff",

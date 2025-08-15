@@ -74,7 +74,16 @@ export default function LoginScreen() {
           {["google", "github", "discord", "apple"].map((provider) => (
             <TouchableOpacity
               key={provider}
-              style={[styles.oauthButton, styles[`${provider}Button`]]}
+              style={[
+                styles.oauthButton,
+                provider === "github"
+                  ? styles.githubButton
+                  : provider === "discord"
+                    ? styles.discordButton
+                    : provider === "apple"
+                      ? styles.appleButton
+                      : styles.oauthButton,
+              ]}
               onPress={() => handleOAuthLogin(provider)}
               disabled={oauth.state.status === "loading"}
             >

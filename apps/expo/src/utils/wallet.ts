@@ -51,9 +51,12 @@ export function useWallet() {
   // Get current chain from wallet
   const getCurrentChain = useCallback(async () => {
     if (!account?.address || wallets.length === 0) return null;
-    
+
     try {
-      const provider = await wallets[0].getProvider();
+      const wallet = wallets[0];
+      if (!wallet) return null;
+
+      const provider = await wallet.getProvider();
       const chainId = await provider.request({ method: 'eth_chainId' });
       const chainIdHex = parseInt(chainId, 16).toString();
       setCurrentChainId(chainIdHex);
@@ -67,10 +70,13 @@ export function useWallet() {
   // Switch to a different chain
   const switchChain = useCallback(async (targetChainId: string) => {
     if (!account?.address || wallets.length === 0) return false;
-    
+
     setIsLoading(true);
     try {
-      const provider = await wallets[0].getProvider();
+      const wallet = wallets[0];
+      if (!wallet) return false;
+
+      const provider = await wallet.getProvider();
       await provider.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: `0x${parseInt(targetChainId).toString(16)}` }],
@@ -88,9 +94,12 @@ export function useWallet() {
   // Sign a message
   const signMessage = useCallback(async (message: string) => {
     if (!account?.address || wallets.length === 0) return null;
-    
+
     try {
-      const provider = await wallets[0].getProvider();
+      const wallet = wallets[0];
+      if (!wallet) return null;
+
+      const provider = await wallet.getProvider();
       const signature = await provider.request({
         method: 'personal_sign',
         params: [message, account.address],
@@ -105,10 +114,13 @@ export function useWallet() {
   // Send a transaction
   const sendTransaction = useCallback(async (to: string, value: string, data?: string) => {
     if (!account?.address || wallets.length === 0) return null;
-    
+
     setIsLoading(true);
     try {
-      const provider = await wallets[0].getProvider();
+      const wallet = wallets[0];
+      if (!wallet) return null;
+
+      const provider = await wallet.getProvider();
       const txHash = await provider.request({
         method: 'eth_sendTransaction',
         params: [{
@@ -130,9 +142,12 @@ export function useWallet() {
   // Get wallet balance
   const getBalance = useCallback(async () => {
     if (!account?.address || wallets.length === 0) return null;
-    
+
     try {
-      const provider = await wallets[0].getProvider();
+      const wallet = wallets[0];
+      if (!wallet) return null;
+
+      const provider = await wallet.getProvider();
       const balance = await provider.request({
         method: 'eth_getBalance',
         params: [account.address, 'latest'],
@@ -150,7 +165,7 @@ export function useWallet() {
     wallets,
     currentChainId,
     isLoading,
-    
+
     // Wallet actions
     create,
     getCurrentChain,
@@ -158,7 +173,7 @@ export function useWallet() {
     signMessage,
     sendTransaction,
     getBalance,
-    
+
     // Chain info
     supportedChains: SUPPORTED_CHAINS,
     currentChain: SUPPORTED_CHAINS[currentChainId as keyof typeof SUPPORTED_CHAINS],

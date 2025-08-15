@@ -116,14 +116,14 @@ export class ContractInteractor {
   constructor(chainId: string, walletClient?: WalletClient) {
     this.chainId = chainId;
     this.walletClient = walletClient;
-    
+
     const address = CONTRACT_ADDRESSES[chainId as keyof typeof CONTRACT_ADDRESSES];
     if (!address || address === '0x0000000000000000000000000000000000000000') {
       throw new Error('Contract not deployed on this network');
     }
-    
+
     this.contractAddress = address as Address;
-    
+
     // Create public client for reads
     this.publicClient = createPublicClient({
       chain: sepolia, // Default to sepolia, can be made dynamic
@@ -136,12 +136,12 @@ export class ContractInteractor {
     if (!this.walletClient) {
       throw new Error('Wallet client not provided for transactions');
     }
-    
+
     try {
       if (!this.walletClient.account) {
         throw new Error('No account available for transaction');
       }
-      
+
       const data = encodeFunctionData({
         abi: PEOPLE_STORAGE_ABI,
         functionName: 'store',
@@ -154,7 +154,7 @@ export class ContractInteractor {
         chain: sepolia,
         account: this.walletClient.account
       });
-      
+
       return hash;
     } catch (error) {
       console.error('Error storing favorite number:', error);
@@ -170,9 +170,9 @@ export class ContractInteractor {
         abi: PEOPLE_STORAGE_ABI,
         functionName: 'retrieve'
       });
-      
+
       return Number(result);
-      } catch (error) {
+    } catch (error) {
       console.error('Error retrieving favorite number:', error);
       throw error;
     }
@@ -183,12 +183,12 @@ export class ContractInteractor {
     if (!this.walletClient) {
       throw new Error('Wallet client not provided for transactions');
     }
-    
+
     try {
       if (!this.walletClient.account) {
         throw new Error('No account available for transaction');
       }
-      
+
       console.log('Adding person:', name, favoriteNumber);
       const data = encodeFunctionData({
         abi: PEOPLE_STORAGE_ABI,
@@ -202,7 +202,7 @@ export class ContractInteractor {
         chain: sepolia,
         account: this.walletClient.account
       });
-      
+
       return hash;
     } catch (error) {
       console.error('Error adding person:', error);
@@ -219,7 +219,7 @@ export class ContractInteractor {
         functionName: 'nameToFavoriteNumber',
         args: [name]
       });
-      
+
       return Number(result);
     } catch (error) {
       console.error('Error getting favorite number by name:', error);
@@ -236,7 +236,7 @@ export class ContractInteractor {
         functionName: 'people',
         args: [BigInt(index)]
       });
-      
+
       return {
         name: result[0],
         favoriteNumber: Number(result[1])
@@ -252,12 +252,12 @@ export class ContractInteractor {
     if (!this.walletClient) {
       throw new Error('Wallet client not provided for transactions');
     }
-    
+
     try {
       if (!this.walletClient.account) {
         throw new Error('No account available for transaction');
       }
-      
+
       const data = encodeFunctionData({
         abi: PEOPLE_STORAGE_ABI,
         functionName: 'removeLastPerson',
@@ -270,7 +270,7 @@ export class ContractInteractor {
         chain: sepolia,
         account: this.walletClient.account
       });
-      
+
       return hash;
     } catch (error) {
       console.error('Error removing last person:', error);
