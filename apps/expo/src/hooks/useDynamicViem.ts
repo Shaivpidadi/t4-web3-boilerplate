@@ -1,4 +1,4 @@
-import { useDynamicContext } from '@dynamic-labs/sdk-react-native';
+import { useDynamicContext } from '@dynamic-labs/react-hooks';
 import { encodeFunctionData } from 'viem';
 
 export function useDynamicViem() {

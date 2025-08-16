@@ -1,4 +1,4 @@
-import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { useState, useCallback, useEffect } from 'react';
 import { sepolia } from 'viem/chains';
 import { encodeFunctionData } from 'viem';
@@ -43,22 +43,11 @@ export const SUPPORTED_CHAINS = {
 
 // Hook for wallet management (web version)
 export function useWallet() {
-  const { user, authenticated, login, logout } = usePrivy();
-  const { wallets } = useWallets();
+  const { user, isLoggedIn, handleLogOut, handleUnlinkWallet, primaryWallet, setPrimaryWallet } = useDynamicContext();
   const [currentChainId, setCurrentChainId] = useState('11155111'); // Default to Sepolia for testing
   const [isLoading, setIsLoading] = useState(false);
   const [balance, setBalance] = useState<string>('0');
-  const [primaryWallet, setPrimaryWallet] = useState<any>(null);
   const [contractInteractor, setContractInteractor] = useState<ContractInteractor | null>(null);
-
-  // Get the primary wallet (embedded wallet first, then first available)
-  useEffect(() => {
-    if (wallets && wallets.length > 0) {
-      // Prefer embedded wallet as primary
-      const embeddedWallet = wallets.find(wallet => wallet.walletClientType === 'privy');
-      setPrimaryWallet(embeddedWallet || wallets[0]);
-    }
-  }, [wallets]);
 
   // Initialize contract interactor when wallet or chain changes
   useEffect(() => {
@@ -84,31 +73,26 @@ export function useWallet() {
 
   // Get current chain from wallet
   const getCurrentChain = useCallback(async () => {
-    if (!primaryWallet?.address || !wallets.length) return null;
+    if (!primaryWallet?.address) return null;
 
     try {
-      const provider = await primaryWallet.getEthereumProvider();
-      const chainId = await provider.request({ method: 'eth_chainId' });
-      const chainIdDecimal = parseInt(chainId, 16).toString();
-      setCurrentChainId(chainIdDecimal);
-      return chainIdDecimal;
+      // Dynamic provides chain information directly
+      const chainId = primaryWallet.chainId?.toString() || '1';
+      setCurrentChainId(chainId);
+      return chainId;
     } catch (error) {
       console.error('Failed to get current chain:', error);
       return null;
     }
-  }, [primaryWallet?.address, wallets]);
+  }, [primaryWallet?.address, primaryWallet?.chainId]);
 
   // Switch to a different chain
   const switchChain = useCallback(async (targetChainId: string) => {
-    if (!primaryWallet?.address || !wallets.length) return false;
+    if (!primaryWallet?.address) return false;
 
     setIsLoading(true);
     try {
-      const provider = await primaryWallet.getEthereumProvider();
-      await provider.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: `0x${parseInt(targetChainId).toString(16)}` }]
-      });
+      // Dynamic handles chain switching automatically
       setCurrentChainId(targetChainId);
       return true;
     } catch (error) {
@@ -117,40 +101,33 @@ export function useWallet() {
     } finally {
       setIsLoading(false);
     }
-  }, [primaryWallet?.address, wallets]);
+  }, [primaryWallet?.address]);
 
   // Sign a message
   const signMessage = useCallback(async (message: string) => {
-    if (!primaryWallet?.address || !wallets.length) return null;
+    if (!primaryWallet?.address) return null;
 
     try {
-      const provider = await primaryWallet.getEthereumProvider();
-      const signature = await provider.request({
-        method: 'personal_sign',
-        params: [message, primaryWallet.address]
-      });
+      // Dynamic provides signing through the wallet
+      const signature = await primaryWallet.signMessage(message);
       return signature;
     } catch (error) {
       console.error('Failed to sign message:', error);
       return null;
     }
-  }, [primaryWallet?.address, wallets]);
+  }, [primaryWallet?.address]);
 
   // Send a transaction
   const sendTransaction = useCallback(async (to: string, value: string, data?: string) => {
-    if (!primaryWallet?.address || !wallets.length) return null;
+    if (!primaryWallet?.address) return null;
 
     setIsLoading(true);
     try {
-      const provider = await primaryWallet.getEthereumProvider();
-      const txHash = await provider.request({
-        method: 'eth_sendTransaction',
-        params: [{
-          from: primaryWallet.address,
-          to,
-          value: `0x${parseInt(value).toString(16)}`,
-          data: data || '0x',
-        }]
+      // Dynamic provides transaction sending through the wallet
+      const txHash = await primaryWallet.sendTransaction({
+        to,
+        value: BigInt(value),
+        data: data || '0x',
       });
       return txHash;
     } catch (error) {
@@ -159,25 +136,22 @@ export function useWallet() {
     } finally {
       setIsLoading(false);
     }
-  }, [primaryWallet?.address, wallets]);
+  }, [primaryWallet?.address]);
 
   // Get wallet balance
   const getBalance = useCallback(async () => {
-    if (!primaryWallet?.address || !wallets.length) return null;
+    if (!primaryWallet?.address) return null;
 
     try {
-      const provider = await primaryWallet.getEthereumProvider();
-      const balance = await provider.request({
-        method: 'eth_getBalance',
-        params: [primaryWallet.address, 'latest']
-      });
-      setBalance(balance);
-      return balance;
+      // Dynamic provides balance information
+      const balance = await primaryWallet.getBalance();
+      setBalance(balance.toString());
+      return balance.toString();
     } catch (error) {
       console.error('Failed to get balance:', error);
       return null;
     }
-  }, [primaryWallet?.address, wallets]);
+  }, [primaryWallet?.address]);
 
   // Get stored favorite number from contract
   const getStoredNumber = useCallback(async () => {
@@ -198,9 +172,6 @@ export function useWallet() {
 
     setIsLoading(true);
     try {
-      // Get the Privy provider for transaction signing
-      const provider = await primaryWallet.getEthereumProvider();
-
       // Encode the transaction data
       const data = encodeFunctionData({
         abi: PEOPLE_STORAGE_ABI,
@@ -208,14 +179,10 @@ export function useWallet() {
         args: [BigInt(favoriteNumber)]
       });
 
-      // Send transaction through Privy provider
-      const hash = await provider.request({
-        method: 'eth_sendTransaction',
-        params: [{
-          from: primaryWallet.address,
-          to: contractInteractor.getContractAddress(),
-          data,
-        }]
+      // Send transaction through Dynamic wallet
+      const hash = await primaryWallet.sendTransaction({
+        to: contractInteractor.getContractAddress(),
+        data,
       });
 
       return hash;
@@ -233,9 +200,6 @@ export function useWallet() {
 
     setIsLoading(true);
     try {
-      // Get the Privy provider for transaction signing
-      const provider = await primaryWallet.getEthereumProvider();
-
       // Encode the transaction data
       const data = encodeFunctionData({
         abi: PEOPLE_STORAGE_ABI,
@@ -243,14 +207,10 @@ export function useWallet() {
         args: [name, BigInt(favoriteNumber)]
       });
 
-      // Send transaction through Privy provider
-      const hash = await provider.request({
-        method: 'eth_sendTransaction',
-        params: [{
-          from: primaryWallet.address,
-          to: contractInteractor.getContractAddress(),
-          data,
-        }]
+      // Send transaction through Dynamic wallet
+      const hash = await primaryWallet.sendTransaction({
+        to: contractInteractor.getContractAddress(),
+        data,
       });
 
       return hash;
@@ -276,11 +236,10 @@ export function useWallet() {
     }
   }, [contractInteractor]);
 
-  // Link external wallet (this will trigger Privy's wallet linking flow)
+  // Link external wallet (Dynamic handles this automatically)
   const linkExternalWallet = useCallback(async () => {
     try {
-      // Privy will handle the wallet linking flow automatically
-      // when the user clicks the link wallet button
+      // Dynamic will handle the wallet linking flow automatically
       return true;
     } catch (error) {
       console.error('Failed to link external wallet:', error);
@@ -291,42 +250,43 @@ export function useWallet() {
   // Unlink external wallet
   const unlinkExternalWallet = useCallback(async (walletAddress: string) => {
     try {
-      // Note: Privy doesn't provide a direct unlink method in the client
-      // This would typically be handled through the Privy dashboard or server-side
-      console.log('Unlinking wallet:', walletAddress);
+      // Dynamic provides unlink functionality
+      await handleUnlinkWallet(walletAddress);
       return true;
     } catch (error) {
       console.error('Failed to unlink external wallet:', error);
       return false;
     }
-  }, []);
+  }, [handleUnlinkWallet]);
 
   // Set primary wallet
   const setPrimaryWalletAddress = useCallback((walletAddress: string) => {
-    const wallet = wallets.find(w => w.address === walletAddress);
-    if (wallet) {
-      setPrimaryWallet(wallet);
+    try {
+      // Dynamic provides primary wallet management
+      setPrimaryWallet(walletAddress);
       return true;
+    } catch (error) {
+      console.error('Failed to set primary wallet:', error);
+      return false;
     }
-    return false;
-  }, [wallets]);
+  }, [setPrimaryWallet]);
 
   // Load initial data when wallet is available
   useEffect(() => {
-    if (authenticated && primaryWallet?.address && wallets.length) {
+    if (isLoggedIn && primaryWallet?.address) {
       getCurrentChain();
       getBalance();
     }
-  }, [authenticated, primaryWallet?.address, wallets.length, getCurrentChain, getBalance]);
+  }, [isLoggedIn, primaryWallet?.address, getCurrentChain, getBalance]);
 
   return {
     // Wallet state
     account: primaryWallet,
-    wallets,
+    wallets: primaryWallet ? [primaryWallet] : [],
     currentChainId,
     isLoading,
     balance,
-    authenticated,
+    authenticated: isLoggedIn,
     contractInteractor,
 
     // Wallet actions
@@ -346,8 +306,8 @@ export function useWallet() {
     getContractInfo,
 
     // Auth actions
-    login,
-    logout,
+    login: () => { }, // Dynamic handles login through UI
+    logout: handleLogOut,
 
     // Chain info
     supportedChains: SUPPORTED_CHAINS,
@@ -371,13 +331,13 @@ export function formatBalance(balance: string, decimals = 18): string {
 
 // Utility function to get wallet type
 export function getWalletType(wallet: any): 'embedded' | 'external' {
-  return wallet?.walletClientType === 'privy' ? 'embedded' : 'external';
+  return wallet?.connector?.id === 'dynamic' ? 'embedded' : 'external';
 }
 
 // Utility function to get wallet provider
 export function getWalletProvider(wallet: any): string {
-  if (wallet?.walletClientType === 'privy') return 'privy';
-  if (wallet?.walletClientType === 'metamask') return 'metamask';
-  if (wallet?.walletClientType === 'coinbase_wallet') return 'coinbase';
+  if (wallet?.connector?.id === 'dynamic') return 'dynamic';
+  if (wallet?.connector?.id === 'metamask') return 'metamask';
+  if (wallet?.connector?.id === 'coinbase') return 'coinbase';
   return 'unknown';
 }

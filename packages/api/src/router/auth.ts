@@ -7,28 +7,28 @@ import { User, Session, Wallet, CreateUserSchema, CreateSessionSchema, CreateWal
 import { protectedProcedure, publicProcedure } from "../trpc";
 
 export const authRouter = {
-  // TODO: Update this to work with Privy authentication
+  // TODO: Update this to work with Dynamic authentication
   getSession: publicProcedure.query(() => {
     // For now, return null since we're not using the old session system
     return null;
   }),
-  
+
   getSecretMessage: protectedProcedure.query(() => {
     return "you can see this secret message!";
   }),
 
-  // New Privy verification endpoint
-  verifyPrivy: publicProcedure
+  // New Dynamic verification endpoint
+  verifyDynamic: publicProcedure
     .input(z.object({
-      privyJwt: z.string(),
+      dynamicJwt: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
-      // TODO: Verify Privy JWT using Privy's server auth library
+      // TODO: Verify Dynamic JWT using Dynamic's server auth library
       // For now, we'll simulate the verification
-      
-      // Extract user info from JWT (in real implementation, verify with Privy)
+
+      // Extract user info from JWT (in real implementation, verify with Dynamic)
       const mockUserInfo = {
-        privyUserId: "mock-privy-user-id",
+        dynamicUserId: "mock-dynamic-user-id",
         email: "user@example.com",
       };
 
@@ -36,7 +36,7 @@ export const authRouter = {
       const [user] = await ctx.db
         .insert(User)
         .values({
-          privyUserId: mockUserInfo.privyUserId,
+          privyUserId: mockUserInfo.dynamicUserId, // Keep existing field name for now
           email: mockUserInfo.email,
           lastLoginAt: new Date(),
         })
@@ -56,7 +56,7 @@ export const authRouter = {
       // Create session (60 minutes)
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
       const sessionToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
-      
+
       const [session] = await ctx.db
         .insert(Session)
         .values({
@@ -78,7 +78,7 @@ export const authRouter = {
 
   // Get current user profile
   getProfile: protectedProcedure.query(async ({ ctx }) => {
-    // TODO: Add proper Privy JWT verification here
+    // TODO: Add proper Dynamic JWT verification here
     // For now, we'll return mock data
     return {
       id: "mock-user-id",
@@ -95,7 +95,7 @@ export const authRouter = {
         id: "mock-wallet-1",
         address: "0x1234567890abcdef",
         type: "embedded" as const,
-        provider: "privy",
+        provider: "dynamic",
         chainId: "1",
         isPrimary: true,
         isActive: true,

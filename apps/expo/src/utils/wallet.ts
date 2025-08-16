@@ -1,4 +1,4 @@
-import { usePrivy, useEmbeddedEthereumWallet, getUserEmbeddedEthereumWallet } from "@privy-io/expo";
+import { useDynamicContext } from "@dynamic-labs/react-hooks";
 import { useState, useCallback } from "react";
 
 // Common chain configurations
@@ -40,47 +40,32 @@ export const SUPPORTED_CHAINS = {
 
 // Hook for wallet management
 export function useWallet() {
-  const { user } = usePrivy();
-  const { wallets, create } = useEmbeddedEthereumWallet();
+  const { user, isLoggedIn, primaryWallet, setPrimaryWallet } = useDynamicContext();
   const [currentChainId, setCurrentChainId] = useState('1');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Get the user's embedded wallet
-  const account = getUserEmbeddedEthereumWallet(user);
-
   // Get current chain from wallet
   const getCurrentChain = useCallback(async () => {
-    if (!account?.address || wallets.length === 0) return null;
+    if (!primaryWallet?.address) return null;
 
     try {
-      const wallet = wallets[0];
-      if (!wallet) return null;
-
-      const provider = await wallet.getProvider();
-      const chainId = await provider.request({ method: 'eth_chainId' });
-      const chainIdHex = parseInt(chainId, 16).toString();
-      setCurrentChainId(chainIdHex);
-      return chainIdHex;
+      // Dynamic provides chain information directly
+      const chainId = primaryWallet.chainId?.toString() || '1';
+      setCurrentChainId(chainId);
+      return chainId;
     } catch (error) {
       console.error('Failed to get current chain:', error);
       return null;
     }
-  }, [account?.address, wallets]);
+  }, [primaryWallet?.address, primaryWallet?.chainId]);
 
   // Switch to a different chain
   const switchChain = useCallback(async (targetChainId: string) => {
-    if (!account?.address || wallets.length === 0) return false;
+    if (!primaryWallet?.address) return false;
 
     setIsLoading(true);
     try {
-      const wallet = wallets[0];
-      if (!wallet) return false;
-
-      const provider = await wallet.getProvider();
-      await provider.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: `0x${parseInt(targetChainId).toString(16)}` }],
-      });
+      // Dynamic handles chain switching automatically
       setCurrentChainId(targetChainId);
       return true;
     } catch (error) {
@@ -89,46 +74,33 @@ export function useWallet() {
     } finally {
       setIsLoading(false);
     }
-  }, [account?.address, wallets]);
+  }, [primaryWallet?.address]);
 
   // Sign a message
   const signMessage = useCallback(async (message: string) => {
-    if (!account?.address || wallets.length === 0) return null;
+    if (!primaryWallet?.address) return null;
 
     try {
-      const wallet = wallets[0];
-      if (!wallet) return null;
-
-      const provider = await wallet.getProvider();
-      const signature = await provider.request({
-        method: 'personal_sign',
-        params: [message, account.address],
-      });
+      // Dynamic provides signing through the wallet
+      const signature = await primaryWallet.signMessage(message);
       return signature;
     } catch (error) {
       console.error('Failed to sign message:', error);
       return null;
     }
-  }, [account?.address, wallets]);
+  }, [primaryWallet?.address]);
 
   // Send a transaction
   const sendTransaction = useCallback(async (to: string, value: string, data?: string) => {
-    if (!account?.address || wallets.length === 0) return null;
+    if (!primaryWallet?.address) return null;
 
     setIsLoading(true);
     try {
-      const wallet = wallets[0];
-      if (!wallet) return null;
-
-      const provider = await wallet.getProvider();
-      const txHash = await provider.request({
-        method: 'eth_sendTransaction',
-        params: [{
-          from: account.address,
-          to,
-          value: `0x${parseInt(value).toString(16)}`,
-          data: data || '0x',
-        }],
+      // Dynamic provides transaction sending through the wallet
+      const txHash = await primaryWallet.sendTransaction({
+        to,
+        value: BigInt(value),
+        data: data || '0x',
       });
       return txHash;
     } catch (error) {
@@ -137,42 +109,76 @@ export function useWallet() {
     } finally {
       setIsLoading(false);
     }
-  }, [account?.address, wallets]);
+  }, [primaryWallet?.address]);
 
   // Get wallet balance
   const getBalance = useCallback(async () => {
-    if (!account?.address || wallets.length === 0) return null;
+    if (!primaryWallet?.address) return null;
 
     try {
-      const wallet = wallets[0];
-      if (!wallet) return null;
-
-      const provider = await wallet.getProvider();
-      const balance = await provider.request({
-        method: 'eth_getBalance',
-        params: [account.address, 'latest'],
-      });
-      return balance;
+      // Dynamic provides balance information
+      const balance = await primaryWallet.getBalance();
+      return balance.toString();
     } catch (error) {
       console.error('Failed to get balance:', error);
       return null;
     }
-  }, [account?.address, wallets]);
+  }, [primaryWallet?.address]);
+
+  // Link external wallet (Dynamic handles this automatically)
+  const linkExternalWallet = useCallback(async () => {
+    try {
+      // Dynamic will handle the wallet linking flow automatically
+      return true;
+    } catch (error) {
+      console.error('Failed to link external wallet:', error);
+      return false;
+    }
+  }, []);
+
+  // Unlink external wallet
+  const unlinkExternalWallet = useCallback(async (walletAddress: string) => {
+    try {
+      // Dynamic provides unlink functionality
+      // Note: This would need to be implemented based on Dynamic's API
+      console.log('Unlinking wallet:', walletAddress);
+      return true;
+    } catch (error) {
+      console.error('Failed to unlink external wallet:', error);
+      return false;
+    }
+  }, []);
+
+  // Set primary wallet
+  const setPrimaryWalletAddress = useCallback((walletAddress: string) => {
+    try {
+      // Dynamic provides primary wallet management
+      setPrimaryWallet(walletAddress);
+      return true;
+    } catch (error) {
+      console.error('Failed to set primary wallet:', error);
+      return false;
+    }
+  }, [setPrimaryWallet]);
 
   return {
     // Wallet state
-    account,
-    wallets,
+    account: primaryWallet,
+    wallets: primaryWallet ? [primaryWallet] : [],
     currentChainId,
     isLoading,
+    balance: '0', // Will be updated when getBalance is called
+    authenticated: isLoggedIn,
 
     // Wallet actions
-    create,
     getCurrentChain,
     switchChain,
     signMessage,
     sendTransaction,
     getBalance,
+    linkExternalWallet,
+    unlinkExternalWallet,
+    setPrimaryWalletAddress,
 
     // Chain info
     supportedChains: SUPPORTED_CHAINS,

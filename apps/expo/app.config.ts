@@ -37,11 +37,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     edgeToEdgeEnabled: true,
   },
   extra: {
-    // Privy configuration - these should match your working project
-    privyAppId: process.env.EXPO_PUBLIC_PRIVY_APP_ID,
-    privyClientId: process.env.EXPO_PUBLIC_PRIVY_CLIENT_ID,
+    // Dynamic configuration - these should match your working project
+    dynamicEnvironmentId: process.env.EXPO_PUBLIC_DYNAMIC_ENVIRONMENT_ID,
     "eas": {
-        "projectId": "49e46c33-e7f1-414e-8ebd-707805cdbff9"
+      "projectId": "49e46c33-e7f1-414e-8ebd-707805cdbff9"
     }
   },
   experiments: {

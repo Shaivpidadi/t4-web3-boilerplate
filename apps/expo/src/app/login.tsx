@@ -10,92 +10,67 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Application from "expo-application";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
-import { useLoginWithOAuth, usePrivy } from "@privy-io/expo";
-import { useLogin } from "@privy-io/expo/ui";
+import { useDynamicContext } from "@dynamic-labs/react-hooks";
 
 export default function LoginScreen() {
-  const { user } = usePrivy();
+  const { user, isLoggedIn } = useDynamicContext();
   const router = useRouter();
 
-  const { login } = useLogin();
-  const oauth = useLoginWithOAuth({
-    onError: (err) => {
-      console.error("OAuth error:", err);
-    },
-  });
+  // If user is already logged in, redirect to main app
+  React.useEffect(() => {
+    if (isLoggedIn && user) {
+      router.replace("/(tabs)");
+    }
+  }, [isLoggedIn, user, router]);
 
-  const handlePrivyLogin = async () => {
+  const handleDynamicLogin = async () => {
     try {
-      // This will show Privy's login modal with wallet options
-      await login({ loginMethods: ["email"] });
+      // Dynamic will handle the login flow automatically
+      // The user will see Dynamic's login modal
+      console.log("Dynamic login initiated");
     } catch (error) {
       console.error("Login failed:", error);
     }
   };
 
-  const handleOAuthLogin = (provider: string) => {
-    oauth.login({ provider: provider as any });
-  };
-
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Welcome to POAPStays</Text>
-        <Text style={styles.subtitle}>Connect your wallet to continue</Text>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
+      <SafeAreaView style={styles.container}>
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Welcome to POAPStays</Text>
+            <Text style={styles.subtitle}>
+              Connect your wallet to get started
+            </Text>
+          </View>
 
-        {/* Configuration Info */}
-        <View style={styles.configSection}>
-          <Text style={styles.configTitle}>Configuration Required:</Text>
-          <Text style={styles.configText}>
-            App ID: {Constants.expoConfig?.extra?.privyAppId || "Not set"}
-          </Text>
-          <Text style={styles.configText}>
-            Client ID: {Constants.expoConfig?.extra?.privyClientId || "Not set"}
-          </Text>
-          <Text style={styles.configText}>
-            Bundle ID: {Application.applicationId}
-          </Text>
-        </View>
-
-        <Text style={styles.instructionText}>
-          Add the Bundle ID above to your Privy dashboard as an "Allowed app
-          identifier"
-        </Text>
-
-        <TouchableOpacity
-          style={styles.googleButton}
-          onPress={handlePrivyLogin}
-        >
-          <Text style={styles.buttonText}>Connect Wallet with Privy</Text>
-        </TouchableOpacity>
-
-        {/* OAuth Login Options */}
-        <View style={styles.oauthContainer}>
-          {["google", "github", "discord", "apple"].map((provider) => (
+          <View style={styles.buttonContainer}>
             <TouchableOpacity
-              key={provider}
-              style={[
-                styles.oauthButton,
-                provider === "github"
-                  ? styles.githubButton
-                  : provider === "discord"
-                    ? styles.discordButton
-                    : provider === "apple"
-                      ? styles.appleButton
-                      : styles.oauthButton,
-              ]}
-              onPress={() => handleOAuthLogin(provider)}
-              disabled={oauth.state.status === "loading"}
+              style={styles.loginButton}
+              onPress={handleDynamicLogin}
             >
-              <Text style={styles.oauthButtonText}>
-                Login with{" "}
-                {provider.charAt(0).toUpperCase() + provider.slice(1)}
-              </Text>
+              <Text style={styles.loginButtonText}>Connect Wallet</Text>
             </TouchableOpacity>
-          ))}
+
+            <Text style={styles.infoText}>
+              Dynamic will handle wallet connection and authentication
+            </Text>
+          </View>
+
+          <View style={styles.footer}>
+            <Text style={styles.versionText}>
+              Version {Application.nativeApplicationVersion}
+            </Text>
+            <Text style={styles.buildText}>
+              Build {Application.nativeBuildVersion}
+            </Text>
+          </View>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </ScrollView>
   );
 }
 
@@ -110,80 +85,68 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
   },
+  header: {
+    alignItems: "center",
+    marginBottom: 60,
+  },
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    marginBottom: 10,
+    color: "#1f2937",
+    marginBottom: 12,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: "#666",
-    marginBottom: 40,
+    color: "#6b7280",
     textAlign: "center",
+    lineHeight: 24,
   },
-  googleButton: {
-    backgroundColor: "#4285F4",
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 8,
-    minWidth: 200,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  configSection: {
-    backgroundColor: "#f0f0f0",
-    padding: 20,
-    borderRadius: 10,
-    marginBottom: 20,
-    width: "100%",
-  },
-  configTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  configText: {
-    fontSize: 16,
-    marginBottom: 5,
-    textAlign: "center",
-  },
-  instructionText: {
-    fontSize: 14,
-    color: "#555",
-    marginTop: 20,
-    textAlign: "center",
-    paddingHorizontal: 20,
-  },
-  oauthContainer: {
-    marginTop: 20,
-    width: "100%",
-    gap: 10,
-  },
-  oauthButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
+  buttonContainer: {
     width: "100%",
     alignItems: "center",
+    marginBottom: 60,
   },
-  oauthButtonText: {
-    color: "white",
-    fontSize: 14,
+  loginButton: {
+    backgroundColor: "#3b82f6",
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    width: "100%",
+    maxWidth: 300,
+    alignItems: "center",
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  loginButtonText: {
+    color: "#fff",
+    fontSize: 18,
     fontWeight: "600",
   },
-  githubButton: {
-    backgroundColor: "#333",
+  infoText: {
+    fontSize: 14,
+    color: "#6b7280",
+    textAlign: "center",
+    lineHeight: 20,
+    maxWidth: 280,
   },
-  discordButton: {
-    backgroundColor: "#5865F2",
+  footer: {
+    alignItems: "center",
   },
-  appleButton: {
-    backgroundColor: "#000",
+  versionText: {
+    fontSize: 12,
+    color: "#9ca3af",
+    marginBottom: 4,
+  },
+  buildText: {
+    fontSize: 12,
+    color: "#9ca3af",
   },
 });

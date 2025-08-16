@@ -6,7 +6,7 @@ import { Button } from "@acme/ui/button";
 import { Input } from "@acme/ui/input";
 import { Label } from "@acme/ui/label";
 
-import { usePrivyViem } from "../hooks/usePrivyViem";
+import { useDynamicViem } from "../hooks/useDynamicViem";
 
 export default function SmartContractPanel() {
   const {
@@ -19,7 +19,7 @@ export default function SmartContractPanel() {
     getNameToFavoriteNumber,
     getPerson,
     removeLastPerson,
-  } = usePrivyViem();
+  } = useDynamicViem();
 
   const [favoriteNumber, setFavoriteNumber] = useState("");
   const [personName, setPersonName] = useState("");

@@ -1,4 +1,4 @@
-import { useDynamicContext } from '@dynamic-labs/sdk-react';
+import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { useMemo } from 'react';
 import { encodeFunctionData } from 'viem';
 import { PEOPLE_STORAGE_ABI } from '../utils/contract';

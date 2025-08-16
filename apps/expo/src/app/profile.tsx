@@ -1,70 +1,89 @@
-import React, { useEffect } from "react";
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
-import { usePrivy } from "@privy-io/expo";
+import { useDynamicContext } from "@dynamic-labs/react-hooks";
 
 export default function ProfileScreen() {
-  const { logout, user } = usePrivy();
+  const { user, isLoggedIn, handleLogOut } = useDynamicContext();
   const router = useRouter();
 
-  // Move navigation logic to useEffect to prevent state updates during render
-  useEffect(() => {
-    if (!user) {
-      router.replace("/login");
-    }
-  }, [user, router]);
-
-  const handleSignOut = async () => {
+  const handleLogout = async () => {
     try {
-      await logout();
+      await handleLogOut();
       router.replace("/login");
     } catch (error) {
       console.error("Logout failed:", error);
     }
   };
 
-  // Don't render anything if user is not available (navigation will happen in useEffect)
-  if (!user) {
-    return null;
+  if (!isLoggedIn || !user) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.content}>
+          <Text style={styles.title}>Not Logged In</Text>
+          <Text style={styles.subtitle}>
+            Please log in to view your profile
+          </Text>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => router.replace("/login")}
+          >
+            <Text style={styles.buttonText}>Go to Login</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Profile</Text>
-
-        <View style={styles.infoSection}>
-          <Text style={styles.label}>User ID</Text>
-          <Text style={styles.value}>{user.id || "Not available"}</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Profile</Text>
+          <Text style={styles.subtitle}>Your account information</Text>
         </View>
 
-        <View style={styles.infoSection}>
-          <Text style={styles.label}>Linked Accounts</Text>
-          <Text style={styles.value}>
-            {user.linked_accounts?.length
-              ? `${user.linked_accounts.length} accounts`
-              : "No linked accounts"}
-          </Text>
+        <View style={styles.profileSection}>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Status:</Text>
+            <Text style={styles.value}>Connected</Text>
+          </View>
+
+          {user.email && (
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Email:</Text>
+              <Text style={styles.value}>{user.email}</Text>
+            </View>
+          )}
+
+          {user.address && (
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Wallet Address:</Text>
+              <Text style={styles.value}>
+                {user.address.slice(0, 6)}...{user.address.slice(-4)}
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Provider:</Text>
+            <Text style={styles.value}>Dynamic</Text>
+          </View>
         </View>
 
-        <View style={styles.buttonSection}>
-          <TouchableOpacity
-            style={[styles.button, styles.primaryButton]}
-            onPress={() => router.push("/")}
-          >
-            <Text style={styles.buttonText}>Smart Contract Panel</Text>
+        <View style={styles.actionsSection}>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>Disconnect Wallet</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.signOutButton}
-            onPress={handleSignOut}
-          >
-            <Text style={styles.signOutButtonText}>Sign Out</Text>
-          </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -74,56 +93,82 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
   },
-  content: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     padding: 20,
+  },
+  header: {
+    alignItems: "center",
+    marginBottom: 40,
   },
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    marginBottom: 30,
+    color: "#1f2937",
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#6b7280",
     textAlign: "center",
   },
-  infoSection: {
-    marginBottom: 25,
+  profileSection: {
+    backgroundColor: "#f9fafb",
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 30,
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
   },
   label: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#666",
-    marginBottom: 8,
+    color: "#374151",
   },
   value: {
     fontSize: 16,
-    color: "#333",
+    color: "#6b7280",
+    fontFamily: "monospace",
   },
-  buttonSection: {
-    marginTop: 40,
-    gap: 16,
+  actionsSection: {
+    alignItems: "center",
+  },
+  logoutButton: {
+    backgroundColor: "#ef4444",
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    minWidth: 200,
+    alignItems: "center",
+  },
+  logoutButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
   },
   button: {
-    paddingVertical: 15,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  primaryButton: {
     backgroundColor: "#3b82f6",
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    minWidth: 200,
+    alignItems: "center",
   },
   buttonText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "600",
   },
-  signOutButton: {
-    backgroundColor: "#FF3B30",
-    paddingVertical: 15,
-    borderRadius: 8,
-  },
-  signOutButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-    textAlign: "center",
+  content: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
   },
 });
